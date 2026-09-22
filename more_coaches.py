@@ -1,0 +1,23 @@
+# COACH stats: REC SCH DEV DIS MOT MGT RES CLU   (name, school, era key, listed tier, tag, stats)
+ROWS = [
+("Ed Orgeron","LSU","portal","headcoach","Coach O's Tigers went perfect and won it all in 2019.",[90,72,76,70,92,68,86,80]),
+("Deion Sanders","Colorado","portal","headcoach","Coach Prime's charisma flipped a program overnight.",[98,68,74,70,98,66,80,84]),
+("Kalen DeBoer","Washington","portal","headcoach","Guided the Huskies to a title-game run.",[80,88,84,82,84,84,82,86]),
+("Lane Kiffin","Ole Miss","portal","headcoach","Offensive innovator who wins in the portal age.",[86,90,78,66,78,80,74,78]),
+("James Franklin","Penn State","portal","headcoach","Recruiting-heavy program builder in Happy Valley.",[92,80,82,80,86,72,80,68]),
+("Josh Heupel","Tennessee","portal","headcoach","Tempo-driven rebuild of the Volunteers.",[84,88,80,74,80,80,76,78]),
+("Mike Norvell","Florida State","portal","headcoach","Led the Seminoles to an undefeated ACC title.",[82,84,84,76,82,78,80,82]),
+("Dan Lanning","Oregon","portal","headcoach","Aggressive, recruiting-savvy Ducks builder.",[88,80,80,74,84,76,78,76]),
+("Jimmy Johnson","Miami (FL)","prostyle","hof","Turned Miami into a national-title machine.",[96,84,86,86,94,86,88,90]),
+("Lloyd Carr","Michigan","prostyle","headcoach","Wolverines' steady 1997 national champion.",[82,76,80,90,78,82,86,80]),
+("Larry Coker","Miami (FL)","prostyle","coordinator","Won a national title in his first season.",[80,72,74,80,78,74,74,72]),
+("Art Briles","Baylor","spread","coordinator","Air-it-out architect of Baylor's rise.",[80,92,78,66,78,76,70,70]),
+("Mike Gundy","Oklahoma State","spread","headcoach","Longtime Cowboys builder with a sharp tongue.",[78,80,84,82,78,78,84,74]),
+("Kyle Whittingham","Utah","spread","headcoach","Utah's tough, steady program builder.",[76,76,86,90,82,78,90,76]),
+("Pat Fitzgerald","Northwestern","spread","headcoach","Wildcats' hard-nosed lifer.",[66,74,84,90,86,80,82,76]),
+("Dan Mullen","Florida","spread","coordinator","Offensive mind who won at Mississippi State and Florida.",[78,86,82,76,76,76,72,72]),
+("Paul Chryst","Wisconsin","spread","coordinator","Badgers' pro-style, physical-line builder.",[74,80,84,84,74,80,82,72]),
+("Butch Davis","Miami (FL)","prostyle","coordinator","Rebuilt Miami's talent pipeline.",[92,74,78,70,80,72,72,70]),
+("Jeff Tedford","California","spread","coordinator","Cal's quarterback whisperer.",[84,86,82,66,78,76,72,72]),
+("Bill Walsh","Stanford","option","hof","Genius offensive mind before the West Coast offense took the pros.",[82,98,90,86,88,94,84,88]),
+]

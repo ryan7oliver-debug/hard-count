@@ -1,0 +1,10 @@
+# The game itself is a single pre-built static file (public/index.html — a copy of run-the-rivalry.html,
+# see build_all.py). No build command needed here: Netlify just serves that file plus the two functions
+# below, which give it an optional shared daily leaderboard (Netlify Blobs). Everything works fine without
+# them too — see logic_d.js's showDailyLeaderboard for the fallback behavior.
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"

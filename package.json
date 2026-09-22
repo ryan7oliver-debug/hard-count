@@ -1,0 +1,8 @@
+{
+  "name": "hard-count",
+  "private": true,
+  "description": "Hard Count — college football daily sim. Static site (public/index.html) plus two Netlify Functions for an optional shared daily leaderboard.",
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  }
+}

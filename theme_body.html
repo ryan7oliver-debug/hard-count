@@ -1,0 +1,321 @@
+<header class="scorebug">
+  <div class="scorebug-inner">
+    <span class="wordmark-row">
+      <svg class="goalpost" viewBox="0 0 28 32" aria-hidden="true"><path d="M5 2v11h18V2M14 13v17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="square"/></svg>
+      <span class="wordmark"><span class="wm-top">Hard</span><span class="wm-main">Count</span></span>
+    </span>
+    <span class="scorebug-date tape" id="todayDate">—</span>
+  </div>
+</header>
+
+<main id="app">
+
+  <section class="screen" id="screen-hub" data-active="true">
+    <div class="hub-hero">
+      <h1 class="wall-stencil">Play one game.<span>Or build a legacy.</span></h1>
+      <div class="hashes" aria-hidden="true"></div>
+      <p class="lede">Three lockers, three ways in: a five-minute daily rivalry, one recruit's road through college, or an entire program across the decades.</p>
+    </div>
+
+    <div class="resume sheet" id="resumeBar" hidden>
+      <p class="tape resume-tag">Career in progress</p>
+      <h2 class="resume-title" id="resumeTitle"></h2>
+      <p class="resume-detail" id="resumeDetail"></p>
+      <div class="btn-row">
+        <button class="btn btn-primary btn-small" id="btnResume">Continue career ▸</button>
+        <button class="btn btn-ghost btn-small" id="btnResumeDrop">Discard save</button>
+      </div>
+      <p class="resume-note">Starting a new career replaces this save.</p>
+    </div>
+
+    <div class="locker-row">
+      <article class="locker" id="cardDaily" style="--door:#3b454c;">
+        <span class="locker-handle" aria-hidden="true"></span>
+        <div class="locker-num" aria-hidden="true">1</div>
+        <div class="locker-body">
+          <p class="tape mode-kicker">Daily</p>
+          <h2 class="mode-title" id="dailyTitle">One Game. One Rivalry.</h2>
+          <p class="mode-desc" id="dailyDesc">Today's opponent, a score to beat, a rivalry record to chase. One official run a day.</p>
+          <p class="tape daily-streak" id="dailyStreak" hidden></p>
+          <button class="btn btn-primary" id="btnGoDaily">See today's matchup ▸</button>
+        </div>
+      </article>
+
+      <article class="locker" id="cardPlayer" style="--door:#2f4a3d;">
+        <span class="locker-handle" aria-hidden="true"></span>
+        <div class="locker-num" aria-hidden="true">5</div>
+        <div class="locker-body">
+          <p class="tape mode-kicker">Five-Star</p>
+          <h2 class="mode-title">Live A Playing Career</h2>
+          <p class="mode-desc">Twelve games a season, three of them yours to play. The rest sim through while what you say off the field follows you. Heisman, then Draft Night.</p>
+          <button class="btn btn-ghost" id="btnGoPlayer">Play Five-Star ▸</button>
+        </div>
+      </article>
+
+      <article class="locker" id="cardCoach" style="--door:#5a302c;">
+        <span class="locker-handle" aria-hidden="true"></span>
+        <div class="locker-num" aria-hidden="true"><svg viewBox="0 0 120 64"><path d="M60 32C48 8 8 8 8 32s40 24 52 0c12-24 52-24 52 0s-40 24-52 0Z" fill="none" stroke="currentColor" stroke-width="17" stroke-linejoin="round"/></svg></div>
+        <div class="locker-body">
+          <p class="tape mode-kicker">Hot Seat</p>
+          <h2 class="mode-title">Build A Dynasty</h2>
+          <p class="mode-desc">Take a job and call three games a year. Keep the boosters, the fans and the locker room with you, win titles, or get fired.</p>
+          <button class="btn btn-ghost" id="btnGoCoach">Take the hot seat ▸</button>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-intro">
+    <div class="panel">
+      <p class="eyebrow">A daily college football challenge</p>
+      <h1 class="display-xl">One game.<br>One rivalry.</h1>
+      <p class="lede" id="introLede">Loading today's matchup…</p>
+      <ul class="howto">
+        <li><span class="howto-num">1</span><div><strong>A ranked opponent, every day.</strong> A real defensive identity: their record, their weak spots, today's kickoff conditions. A new rival rotates in at midnight.</div></li>
+        <li><span class="howto-num">2</span><div><strong>Build for the matchup.</strong> The scouting report shows what wins here. Pull files on players built to attack this defense.</div></li>
+        <li><span class="howto-num">3</span><div><strong>Play it your way.</strong> Pick a game plan, then Attack or Play It Safe on the three signature drives. Going for it chases a blowout, but it can backfire.</div></li>
+        <li><span class="howto-num">4</span><div><strong>Claim the rivalry record.</strong> Your final score gets posted. Beat the standing record and it's yours until someone takes it.</div></li>
+      </ul>
+      <button class="btn btn-primary" id="btnSeeMatchup">See today's matchup ▸</button>
+      <button class="btn btn-ghost" style="margin-top:14px;" id="btnBackHub1">‹ Back to the lockers</button>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-preview">
+    <div class="panel matchup-card">
+      <p class="tape matchup-kicker">Today's Matchup</p>
+      <h2 class="matchup-name" id="pvTeamName">—</h2>
+      <p class="matchup-sub" id="pvTeamSub">—</p>
+      <p class="matchup-flavor" id="pvTeamFlavor">—</p>
+      <details class="scout">
+        <summary>Scouting report ▾</summary>
+        <p id="pvScouting">—</p>
+      </details>
+
+      <div class="stat-split">
+        <div>
+          <p class="stat-label" id="pvTargetLabel">Target · Beat the Ranked Avg</p>
+          <p class="stat-value gold" id="pvTarget">—</p>
+          <p class="stat-foot" id="pvTargetFoot">what a ranked offense averages here</p>
+        </div>
+        <div>
+          <p class="stat-label" id="pvRecordLabel">Rivalry Record</p>
+          <p class="stat-value turf" id="pvRecord">—</p>
+          <p class="stat-foot" id="pvRecordHolder">—</p>
+        </div>
+        <div class="stat-split-note">Kickoff window closes in <b id="pvCountdown">—</b> · new rival rotates in</div>
+      </div>
+
+      <p class="sig-note">★ <b>Signature drives:</b> <span id="pvSigDrives">—</span>. The three moments where you choose the game plan yourself.</p>
+
+      <div class="choice-group">
+        <p class="choice-title">Your Position</p>
+        <div class="choice-btns" id="posButtons" style="grid-template-columns:repeat(3,1fr);"></div>
+        <p class="stat-foot" id="pvModeNote" style="margin-top:12px;"></p>
+      </div>
+
+      <div class="choice-group">
+        <p class="choice-title">Your Game Plan</p>
+        <p class="plan-read" id="pvRead"></p>
+        <div class="choice-btns" id="planButtons"></div>
+      </div>
+
+      <div class="choice-group">
+        <p class="choice-title">How Do You Want To Watch?</p>
+        <div class="watch-btns" id="watchButtons"></div>
+      </div>
+
+      <button class="btn btn-primary" id="btnGoDraft">Draft your player ▸</button>
+      <p class="stat-foot" style="text-align:center;margin-top:12px;" id="pvAttemptNote">Attempt #1 today</p>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-draft">
+    <div class="panel">
+      <div class="coach-note" id="draftInfoBox">
+        <b>How it works</b> — fill <b>8 skill slots</b>. Each spin reveals a quarterback legend; tap one of their attributes to draft it into a slot. Don't like them? Use a <b>re-spin</b> to pass. 8 picks + 2 re-spins, then your build's set.
+        <div><button class="btn btn-ghost btn-small" id="btnDismissInfo">GOT IT</button></div>
+      </div>
+
+      <div class="draft-head">
+        <h2 id="draftHeading">Draft Your Player</h2>
+        <p class="draft-progress"><span class="chip">Picks<b id="draftCount">0</b>/8</span><span class="chip">Re-spins<b id="draftRespins">2</b></span><span class="chip">Premium left<b id="draftPremium">2</b></span></p>
+      </div>
+
+      <div id="playerCardWrap">
+        <div class="player-card empty" id="playerCardEmpty">
+          <p>Pull the first file to see who's on it.</p>
+        </div>
+      </div>
+
+      <button class="btn btn-rival spin-cta" id="btnSpin">Pull a file</button>
+      <button class="btn btn-ghost respin-cta" id="btnRespin" style="display:none;">Pass on him · <span id="respinCount">2</span> left</button>
+
+      <div class="locker-bay">
+        <div class="bay-head">
+          <p class="tape slots-title" id="slotsTitle">Your Lockers</p>
+          <div id="radarWrap"></div>
+        </div>
+        <div class="slots-grid" id="slotsGrid"></div>
+      </div>
+
+      <div id="draftOdds" class="odds-box" style="display:none;"></div>
+      <button class="btn btn-primary" id="btnKickoff" style="display:none;margin-top:18px;">BUILD COMPLETE — KICK OFF ▸</button>
+      <button class="btn btn-ghost" style="margin-top:14px;" id="btnBackHub5">‹ Abandon &amp; back to the lockers</button>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-sim">
+    <div class="panel">
+      <div class="sim-head">
+        <div>
+          <p class="sim-score-label" id="simScoreLabel">Points</p>
+          <p class="sim-score" id="simScore">0</p>
+        </div>
+        <div style="text-align:right;">
+          <p class="sim-drive" id="simDriveLabel">Drive 0 of 12</p>
+          <p class="sim-drive" id="simTeamLabel">vs —</p>
+        </div>
+      </div>
+      <div class="field-viz-wrap">
+        <div class="field-broadcast">
+          <div class="field-scoreboard">
+            <span id="fieldSbLeft">DRIVE 1 &middot; Q1</span>
+            <span id="fieldSbRight">1ST &amp; 10</span>
+          </div>
+          <div class="field-inner">
+            <div class="field-sideline" aria-hidden="true"></div>
+            <div style="position:relative;flex:1;">
+              <div class="field-viz" id="fieldViz"></div>
+              <div class="field-hud"><span id="fieldHudLeft">YOU</span><span id="fieldHudRight">OPP</span></div>
+            </div>
+            <div class="field-sideline" aria-hidden="true"></div>
+          </div>
+          <div class="field-caption-bar"><p class="field-caption" id="fieldCaption" aria-live="polite">Kickoff.</p></div>
+        </div>
+        <div class="sim-controls" id="simControls">
+          <button class="sim-ctl" id="btnSpeed" disabled><b>1×</b><span>Speed</span></button>
+          <button class="sim-ctl" id="btnSkipPlay" disabled><b>&#9656;|</b><span>Skip Play</span></button>
+          <button class="sim-ctl" id="btnSkipDecision" disabled><b>&#9656;&#9656;</b><span>To Decision</span></button>
+          <button class="sim-ctl sim-ctl-end" id="btnSkipGame" disabled><b>&#9656;&#9656;|</b><span>Sim To End</span></button>
+        </div>
+      </div>
+      <div id="simLog"></div>
+      <div id="sigPanelWrap"></div>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-results">
+    <div class="panel">
+      <div class="result-hero">
+        <p class="result-flag" id="resFlag">Final</p><br>
+        <p class="result-score" id="resScore">0<span> pts</span></p>
+        <p class="result-verdict" id="resVerdict">—</p>
+        <p class="result-daily" id="resDaily"></p>
+      </div>
+
+      <div class="sheet lb-box" id="lbBox" hidden></div>
+
+      <div class="sheet recap-wrap">
+        <table class="recap-table">
+          <thead><tr><th>Drive</th><th>Result</th><th style="text-align:right;">Pts</th></tr></thead>
+          <tbody id="recapBody"></tbody>
+        </table>
+      </div>
+
+      <div class="share-box" id="shareBox">—</div>
+      <button class="btn btn-ghost btn-small" id="btnCopy">Copy result</button>
+      <p class="copy-status" id="copyStatus"></p>
+
+      <div class="btn-row" style="margin-top:24px;">
+        <button class="btn btn-primary" id="btnRunBack">Practice again</button>
+        <button class="btn btn-ghost" id="btnNewMatchup">Practice: new matchup</button>
+      </div>
+      <button class="btn btn-ghost" style="margin-top:14px;" id="btnBackHub2">‹ Back to the lockers</button>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-legacy-intro">
+    <div class="panel">
+      <p class="eyebrow" id="legIntroKicker">—</p>
+      <h1 class="display-xl" id="legIntroTitle">—</h1>
+      <p class="lede" id="legIntroLede">—</p>
+      <ul class="howto" id="legIntroHowto"></ul>
+      <div class="choice-group">
+        <p class="choice-title">Your Name</p>
+        <input class="name-input" id="carName" maxlength="22" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="choice-group">
+        <p class="choice-title" id="charTitle">Your File</p>
+        <div id="avatarPickerWrap"></div>
+      </div>
+      <div class="choice-group" id="legPosGroup">
+        <p class="choice-title">Your Position</p>
+        <div class="choice-btns" id="legPosButtons" style="grid-template-columns:repeat(3,1fr);"></div>
+      </div>
+      <button class="btn btn-primary" id="btnLegDraft">Build ▸</button>
+      <button class="btn btn-ghost" style="margin-top:14px;" id="btnBackHub3">‹ Back to the lockers</button>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-career">
+    <div class="panel career-panel">
+      <p class="tape save-note" id="saveNote" hidden>This browser is blocking saves. Closing the tab ends this run.</p>
+      <div class="car-head" id="carHead"></div>
+      <div class="meter-board" id="carMeters"></div>
+      <div class="wk-strip" id="carStrip"></div>
+      <div class="car-stage" id="carStage" aria-live="polite"></div>
+      <div class="car-feed" id="carFeed"></div>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-legacy-sim">
+    <div class="panel">
+      <div class="sim-head">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div class="avatar-mini" id="legSimAvatar"></div>
+          <div>
+            <p class="sim-score-label" id="legSimLabel1">Season</p>
+            <p class="sim-score" id="legSimYear">1</p>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <p class="sim-drive" id="legSimSub1">—</p>
+          <p class="sim-drive" id="legSimSub2">—</p>
+        </div>
+      </div>
+      <div id="legLog"></div>
+      <div id="legDecisionWrap"></div>
+    </div>
+  </section>
+
+  <section class="screen" id="screen-legacy-results">
+    <div class="panel">
+      <div class="result-hero">
+        <div class="avatar-mini" id="legResAvatar" style="margin:0 auto 14px;width:64px;height:74px;"></div>
+        <p class="result-flag" id="legResFlag">Career Over</p><br>
+        <p class="result-score" id="legResHeadline">—</p>
+        <p class="result-verdict" id="legResVerdict">—</p>
+      </div>
+      <div class="trophy-row" id="legTrophyRow"></div>
+      <div class="sheet recap-wrap">
+        <table class="recap-table">
+          <thead><tr><th id="legRecapCol1">Season</th><th>Result</th><th style="text-align:right;">Record</th></tr></thead>
+          <tbody id="legRecapBody"></tbody>
+        </table>
+      </div>
+      <div class="share-box" id="legShareBox">—</div>
+      <button class="btn btn-ghost btn-small" id="btnLegCopy">Copy result</button>
+      <p class="copy-status" id="legCopyStatus"></p>
+      <div class="btn-row" style="margin-top:24px;">
+        <button class="btn btn-primary" id="btnLegRestart">Build another</button>
+        <button class="btn btn-ghost" id="btnBackHub4">‹ Back to the lockers</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <p>Fan-made college football sim. Draftable legends are real, honoring real careers, and the schools you face are real programs. Every matchup, score, and record is simulated. Independent fan project, not affiliated with the NCAA or any school. All results are simulated for entertainment only.</p>
+</footer>

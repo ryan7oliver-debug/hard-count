@@ -1,0 +1,462 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Hard Count balance tests</title>
+<style>
+  body{font:15px/1.5 ui-monospace,Menlo,monospace;background:#15181a;color:#e6e8e3;margin:0;padding:24px;max-width:980px}
+  h1{font-size:20px;margin:0 0 4px} p.sub{color:#9aa19c;margin:0 0 18px}
+  #banner{padding:10px 14px;margin:0 0 16px;font-weight:700}
+  #banner.run{background:#3a3520;color:#e8c95a} #banner.ok{background:#1f3a29;color:#7fe0a0} #banner.bad{background:#472222;color:#ff9a9a}
+  table{border-collapse:collapse;width:100%} td,th{padding:6px 10px;border-bottom:1px solid #2b3033;text-align:left;vertical-align:top}
+  .pass{color:#7fe0a0} .fail{color:#ff9a9a;font-weight:700} td.d{color:#9aa19c;font-size:13px}
+  iframe{position:absolute;left:-9999px;width:1200px;height:900px}
+</style>
+<h1>Balance tests</h1>
+<p class="sub">Loads the built game, fixes the random numbers to a seed, and checks the numbers the design depends on. Run <code>python3 serve.py</code>, then open <code>http://127.0.0.1:8765/tests/balance.html</code>.</p>
+<div id="banner" class="run">Running…</div>
+<table id="out"><thead><tr><th></th><th>Check</th><th>Measured</th></tr></thead><tbody></tbody></table>
+<iframe id="game"></iframe>
+<script>
+(async function(){
+  const frame = document.getElementById('game'), rows = [], results = [];
+  await new Promise(r=>{ frame.addEventListener('load', r); frame.src = '../run-the-rivalry.html?t='+Date.now(); });   // cache-busted so the test always sees the latest build
+  for(let i=0;i<100 && !(frame.contentWindow.__GG && frame.contentWindow.__GG.EVENTS);i++) await new Promise(r=>setTimeout(r,50));
+  const W = frame.contentWindow, G = W.__GG, S = G.state;
+  W.__GG_AUTOPILOT = true;
+
+  // ---- seeded random numbers, so a run is repeatable ----
+  function seed(n){ let a = n>>>0; W.Math.random = function(){ a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a>>>15, 1|a); t = t + Math.imul(t ^ t>>>7, 61|t) ^ t; return ((t ^ t>>>14)>>>0)/4294967296; }; }
+
+  // ---- helpers ----
+  const ATTRS = { QB:['ARM','ACC','DEEP','MOB','IQ','POC','CLU','LEAD'], DB:['COV','TKL','SPD','BALL','IQ','PHY','STA','CLU'] };
+  const uni = (a,v)=>{ const o={}; a.forEach(k=>o[k]=v); return o; };
+  const f1 = x => (Math.round(x*10)/10).toFixed(1);
+  function offense(plan, lean, ovr){ S.position='QB'; S.slots=uni(ATTRS.QB, ovr||82); S.defMode=false; S.plan=plan; S.team={defRating:70,favors:[],offRating:70,offFavors:[],lean,offLean:0}; }
+  function defense(plan, offLean){ S.position='DB'; S.slots=uni(ATTRS.DB,82); S.defMode=true; S.plan=plan; S.team={defRating:70,favors:[],offRating:82,offFavors:[],lean:0,offLean}; }
+  // points per game with all 12 drives ordinary (plan effect only), or all 12 forced to one signature choice (divide the gap by 4 for the real 3 drives)
+  function game(N, forced){ let s=0; for(let i=0;i<N;i++){ let g=0; for(let n=1;n<=12;n++){ const D=G.newDrive(n); D.isSig=!!forced; D.sigChoice=forced||null; while(!D.over) G.stepDrive(D); g+=D.points; } s+=g; } return s/N; }
+  const planPts = (setup, plan, lean, N)=>{ setup(plan, lean); return game(N||3000, null); };
+  const sigPts = (setup, choice, lean, N)=>{ setup('balanced', lean); return game(N||3000, choice); };
+
+  function check(name, fn){ rows.push({ name, fn }); }
+  const within = (v,lo,hi)=> v>=lo && v<=hi;
+
+  // ---- the game starts ----
+  check('The game boots: hub drawn, dev panel built, opponent chosen', ()=>{
+    const d = frame.contentDocument;
+    const ok = !!d.getElementById('devToggle') && d.getElementById('todayDate').textContent.length>3 && /Today you/.test(d.getElementById('introLede').textContent) && !!S.team;
+    return { pass: ok, detail: ok ? 'today: '+d.getElementById('todayDate').textContent+', opponent '+S.team.name : 'init did not finish (a script error at load stops it before the dev panel is built)' };
+  });
+
+  check('The old names are gone from the page', ()=>{
+    const d = frame.contentDocument, clone = d.body.cloneNode(true); clone.querySelectorAll('script,style').forEach(n=>n.remove());
+    const text = (d.title+' '+clone.textContent);
+    const hit = text.match(/gridiron gauntlet|take the field|run the program|daily challenge/i);
+    return { pass: !hit, detail: hit ? 'still says "'+hit[0]+'"' : 'title "'+d.title+'", no old names in the visible page' };
+  });
+  check('Nothing on the page names another game', ()=>{
+    const html = frame.contentDocument.documentElement.outerHTML;
+    const hit = html.match(/run\s?the\.?\s?(tour|games|gg)|runthe\.gg/i);
+    return { pass: !hit, detail: hit ? 'found "'+hit[0]+'"' : 'no competitor names in the shipped page' };
+  });
+
+  // ---- the field: real team colors, contrast, and a legible YOU tag ----
+  check('Team palettes derive real, distinct colors and readable trim from each school\'s accent', ()=>{
+    const bad = [];
+    [['#BB0000','Ohio State'],['#154733','Oregon'],['#F4F0E6','a near-white school'],['#0C2340','Notre Dame']].forEach(([hex,label])=>{
+      const pal = G.sidePalette(hex);
+      if(pal.jersey.toLowerCase()!==hex.toLowerCase()) bad.push(label+': jersey does not match the accent');
+      if(!/^#/.test(pal.trim)) bad.push(label+': trim is not a color');
+    });
+    const dark = G.contrastOn('#0C2340'), light = G.contrastOn('#F4F0E6');
+    if(dark===light) bad.push('a near-black and a near-white accent picked the same trim color');
+    return { pass: bad.length===0, detail: bad.length ? bad.join('; ') : 'jerseys match their school\'s real hex, and dark/light accents get different (readable) trim' };
+  });
+  check('buildField() picks up the real matchup colors, and the daily clears them between games', ()=>{
+    S.draftMode='player'; S.position='RB'; S.slots=uni(G.POSITIONS.RB.attrs,80);
+    S.team = { accent:'#154733', short:'ORE' };           // Oregon, for this check
+    S.myAccent = '#9E1B32';                                // Alabama, standing in for a career program
+    G.buildField();
+    const withBoth = { opp: G.FE.oppPal.jersey, my: G.FE.myPal.jersey };
+    S.myAccent = null; S.team = { accent:'#154733', short:'ORE' };
+    G.buildField();
+    const dailyCleared = G.FE.myPal.jersey;
+    return { pass: withBoth.opp==='#154733' && withBoth.my==='#9E1B32' && dailyCleared!=='#9E1B32', detail: 'opponent '+withBoth.opp+', program '+withBoth.my+'; after clearing myAccent (the daily has no program) it falls back to '+dailyCleared+', not the stale Alabama color' };
+  });
+
+  // ---- failure states: injuries, and a league that answers your success ----
+  check('Injuries: risk is position-shaped and durability trims it a little', ()=>{
+    S.draftMode='player'; S.position='RB'; S.slots=uni(G.POSITIONS.RB.attrs,85);
+    const C = G.newCareer('player','T'); G.joinProgram(C.league[3]);
+    let hi=0, lo=0, N=20000;
+    for(let i=0;i<N;i++){ C.pl.attrs.STA=95; if(G.rollInjury && G.rollInjury()) hi++; }
+    for(let i=0;i<N;i++){ C.pl.attrs.STA=50; if(G.rollInjury && G.rollInjury()) lo++; }
+    const ok = typeof G.rollInjury==='function' && lo>hi && hi>0;
+    return { pass: ok, detail: !G.rollInjury ? 'rollInjury not exported' : 'per-play injury chance at STA 95 vs 50: '+(100*hi/N).toFixed(2)+'% vs '+(100*lo/N).toFixed(2)+'% (durability should lower it)' };
+  });
+  check('A coach who has already won answers to a tougher league than a coach who never has', ()=>{
+    S.draftMode='coach';
+    const C = G.newCareer('coach','T'); G.joinProgram(C.league[3]);
+    const before = C.league.filter(t=>!t.isUser).map(t=>t.rating);
+    C.year = 6; C.champs = 2; C.confTitles = 3;
+    for(let i=0;i<6;i++) G.programDrift();
+    const provenAvg = C.league.filter(t=>!t.isUser).reduce((s,t)=>s+t.rating,0)/27;
+    const C2 = G.newCareer('coach','T2'); G.joinProgram(C2.league[3]);
+    C2.year = 1; C2.champs = 0; C2.confTitles = 0;
+    for(let i=0;i<6;i++) G.programDrift();
+    const freshAvg = C2.league.filter(t=>!t.isUser).reduce((s,t)=>s+t.rating,0)/27;
+    return { pass: provenAvg > freshAvg + 3, detail: 'league average rating after 6 years, a proven champion vs. a first-year coach: '+provenAvg.toFixed(1)+' vs '+freshAvg.toFixed(1) };
+  });
+  check('Heisman: a real shot for an elite season, a long one for a merely good one, never a lock', async ()=>{
+    async function careers(pos, ovr, teamRankIdx, N){
+      let won=0;
+      for(let i=0;i<N;i++){
+        S.draftMode='player'; S.position=pos; S.slots=uni(G.POSITIONS[pos].attrs,ovr);
+        const C=G.newCareer('player','T'); C.recentEv=[]; C.autoLog=[];
+        const sorted=C.league.slice().sort((a,b)=>b.rating-a.rating);
+        G.joinProgram(sorted[Math.min(teamRankIdx,sorted.length-1)]); C.autopilot=true;
+        await G.careerLoop();
+        if(C.awards.some(a=>a.id==='heisman')) won++;
+      }
+      return won/N;
+    }
+    const elite = await careers('QB',85,0,60), good = await careers('QB',80,13,60);
+    const pass = elite>=0.35 && elite<=0.85 && good>=0.05 && good<=0.30 && elite>good;
+    return { pass, detail:'best-build QB on the #1 team: '+(100*elite).toFixed(0)+'% career Heisman rate (needs 35-85%); a good QB on a mid-pack team (#14): '+(100*good).toFixed(0)+'% (needs 5-30%, and below the elite rate)' };
+  });
+
+  // ---- draft tension: the cap actually holds, even against pure "take the biggest number" play ----
+  check('Draft: at most PREMIUM_LIMIT attributes can exceed PREMIUM_CAP, even picking greedily', ()=>{
+    let maxOver = 0, N = 60;
+    for(let i=0;i<N;i++){
+      S.draftMode='player'; S.position='QB';
+      G.resetDraft('player');
+      for(let pick=0; pick<8; pick++){
+        const cfg = G.draftCfg();
+        const p = G.drawPick();
+        const open = cfg.attrs.filter(k=>S.slots[k]==null);
+        let best=null, bv=-1;
+        open.forEach(k=>{ if(p.stats[k]>bv){ bv=p.stats[k]; best=k; } });
+        S.currentPlayer = p;
+        G.draftAttribute(best);
+      }
+      const over = Object.values(S.slots).filter(v=>v>G.PREMIUM_CAP).length;
+      maxOver = Math.max(maxOver, over);
+    }
+    return { pass: maxOver<=G.PREMIUM_LIMIT, detail: 'over '+N+' greedy drafts, max attributes above '+G.PREMIUM_CAP+' seen in one build: '+maxOver+' (cap is '+G.PREMIUM_LIMIT+')' };
+  });
+
+  // ---- shared daily leaderboard: the pure parts (name storage, list rendering) work without a live backend ----
+  check('Leaderboard name persists via store, and the rendered list escapes/marks the right row', ()=>{
+    G.setLeaderboardName('  Ryan  ');
+    const after = G.leaderboardName();
+    const html = G.renderLeaderboardList([{name:'<script>',score:44,position:'QB',opponent:'Oregon'},{name:'Sam',score:31,position:'RB'}], 2);
+    const items = html.split('</li>');
+    const escaped = items[0].includes('&lt;script&gt;') && !items[0].includes('<script>');
+    const firstNotMe = !/class="me"/.test(items[0]);
+    const secondIsMe = /class="me"/.test(items[1]) && items[1].includes('Sam');
+    const empty = /be the first/.test(G.renderLeaderboardList([], null));
+    const ok = after==='Ryan' && escaped && firstNotMe && secondIsMe && empty;
+    return { pass: ok, detail: 'name persists trimmed ("Ryan"); a hostile name is HTML-escaped, rank 1 is not marked "me", rank 2 ("Sam") is; an empty board says to be the first' };
+  });
+
+  // ---- real teams: the opponents are real programs, no leftover fictional ones ----
+  check('The 28-team league and the daily opponents are all distinct real programs', ()=>{
+    S.draftMode='player'; S.position='QB'; S.slots=uni(ATTRS.QB,80);
+    const C = G.newCareer('player','T');
+    const ids = C.league.map(t=>t.id), shorts = C.league.map(t=>t.short), names = C.league.map(t=>t.name);
+    const dupIds = ids.length - new Set(ids).size, dupShorts = shorts.length - new Set(shorts).size, dupNames = names.length - new Set(names).size;
+    const dailyIds = G.TEAMS.map(t=>t.id), dailyDup = dailyIds.length - new Set(dailyIds).size;
+    const stale = /sentinels|marauders|timberwolves|privateers(?!s)|redline|ironclad|prairie fire|blackstone ridge|sable coast|granite peak/i;
+    const staleHit = names.concat(G.TEAMS.map(t=>t.name)).find(n=>stale.test(n));
+    const ok = C.league.length===28 && dupIds===0 && dupShorts===0 && dupNames===0 && G.TEAMS.length>=6 && dailyDup===0 && !staleHit;
+    return { pass: ok, detail: ok ? '28 league teams + '+G.TEAMS.length+' daily teams, all distinct ids/shorts/names, none fictional' : 'league '+C.league.length+' dupIds '+dupIds+' dupShorts '+dupShorts+' dupNames '+dupNames+' daily '+G.TEAMS.length+' dailyDup '+dailyDup+' stale '+staleHit };
+  });
+
+  // ---- the daily: same dice, one official run, a streak ----
+  function seededDrive(key, n, choice){
+    offense('balanced',0); const D=G.newDrive(n); if(D.isSig) D.sigChoice=choice||'safe';
+    G.seedRng(key+':'+n); while(!D.over) G.stepDrive(D); G.unseedRng();
+    return D.outcome+'/'+D.points+'/'+D.plays;
+  }
+  check('Seeded drives repeat exactly, and one drive does not change the next', ()=>{
+    const a = seededDrive('2099-01-01:x',4), b = seededDrive('2099-01-01:x',4);
+    seededDrive('2099-01-01:x',3,'attack'); const afterAttack = seededDrive('2099-01-01:x',4);
+    seededDrive('2099-01-01:x',3,'safe'); const afterSafe = seededDrive('2099-01-01:x',4);
+    const seqA = [1,2,4,5,6,8,9,11,12].map(n=>seededDrive('2099-01-01:x',n)).join(','), seqB = [1,2,4,5,6,8,9,11,12].map(n=>seededDrive('2099-01-02:x',n)).join(',');
+    return { pass: a===b && a===afterAttack && a===afterSafe && seqA!==seqB, detail:'drive 4 = '+a+' every time; a different day gives a different game: '+(seqA!==seqB) };
+  });
+  check('Streak counts consecutive days, holds on the same day, resets after a gap', ()=>{
+    const N = G.nextStreak, L = G.liveStreak;
+    const first = N({n:0,best:0,last:null},'2099-03-10'), next = N(first,'2099-03-11'), same = N(next,'2099-03-11'), gap = N(next,'2099-03-14'), monthEnd = N({n:4,best:9,last:'2099-02-28'},'2099-03-01'), dst = N({n:2,best:2,last:'2099-03-08'},'2099-03-09');
+    const live = L({streak:{n:3,best:3,last:'2099-03-10'}},'2099-03-11')===3 && L({streak:{n:3,best:3,last:'2099-03-10'}},'2099-03-12')===0;
+    const ok = first.n===1 && next.n===2 && same.n===2 && gap.n===1 && gap.best===2 && monthEnd.n===5 && monthEnd.best===9 && dst.n===3 && live;
+    return { pass: ok, detail:'first '+first.n+', next day '+next.n+', same day '+same.n+', after a gap '+gap.n+' (best '+gap.best+'), across a month end '+monthEnd.n+', streak alive/expired '+live };
+  });
+  check('Only the first result of a day is official, and it is stored', ()=>{
+    const keep = G.store.get(G.DAILY_KEY); G.store.del(G.DAILY_KEY);
+    const r1 = G.recordDailyResult({team:'x',teamName:'X',score:31,def:false,target:28,beat:true},'2099-05-01');
+    const r2 = G.recordDailyResult({team:'x',teamName:'X',score:50,def:false,target:28,beat:true},'2099-05-01');
+    const r3 = G.recordDailyResult({team:'x',teamName:'X',score:20,def:false,target:28,beat:false},'2099-05-02');
+    const d = G.readDaily(); G.store.del(G.DAILY_KEY); if(keep!==null) G.store.set(G.DAILY_KEY, keep);
+    const ok = r1.official && !r2.official && r3.official && d.days['2099-05-01'].score===31 && d.streak.n===2;
+    return { pass: ok, detail:'first run official '+r1.official+', second run official '+r2.official+' (score kept: '+d.days['2099-05-01'].score+'), next day official '+r3.official+', streak '+d.streak.n };
+  });
+
+  // ---- position involvement: your build decides who the play belongs to ----
+  check('A better build gets more of its own plays: usage rises with OVR', ()=>{
+    function usageRate(pos, def, ovr, N){
+      offense_or_defense: { S.position=pos; S.slots=uni(G.POSITIONS[pos].attrs, ovr); S.defMode=def;
+        S.team = def ? {defRating:70,favors:[],offRating:82,offFavors:[],lean:0,offLean:0} : {defRating:70,favors:[],offRating:70,offFavors:[],lean:0,offLean:0}; S.plan='balanced'; }
+      let mine=0, plays=0;
+      for(let i=0;i<N;i++){ const D=G.newDrive(3); D.isSig=false; while(!D.over){ const ev=G.stepDrive(D); if(ev.kind==='play'){ plays++; if(ev.result.mine) mine++; } } }
+      return mine/plays;
+    }
+    const rows = ['RB','WR','EDGE','DB','LB'].map(pos=>{
+      const lo = usageRate(pos, pos==='EDGE'||pos==='DB'||pos==='LB', 58, 6000);
+      const hi = usageRate(pos, pos==='EDGE'||pos==='DB'||pos==='LB', 96, 6000);
+      return { pos, lo:+lo.toFixed(3), hi:+hi.toFixed(3) };
+    });
+    const bad = rows.filter(r=>r.hi - r.lo < 0.08);
+    return { pass: bad.length===0, detail: rows.map(r=>r.pos+' '+r.lo+' → '+r.hi).join(', ')+' (share of plays credited to you, OVR 58 → 96)' };
+  });
+  check('OL keeps full personal quality on every play (never gated to a teammate baseline)', ()=>{
+    S.position='OL'; S.slots=uni(G.POSITIONS.OL.attrs,90); S.defMode=false; S.plan='balanced'; S.team={defRating:70,favors:[],offRating:70,offFavors:[],lean:0,offLean:0};
+    const inv1 = G.involvement(true), inv2 = G.involvement(false);
+    return { pass: inv1===null && inv2===null, detail: 'involvement() for OL on pass/run: '+JSON.stringify(inv1)+' / '+JSON.stringify(inv2)+' (null means no gating — always full quality)' };
+  });
+  check('The field engine puts the YOU ring on the entity credited with the play, never on an uncredited one', ()=>{
+    let n=0, bad=[];
+    const cases = [
+      ['QB', false, {isPass:true, mine:true, type:'normal', yards:6}],
+      ['RB', false, {isPass:false, mine:true, type:'normal', yards:4}],
+      ['RB', false, {isPass:false, mine:false, type:'normal', yards:4}],
+      ['WR', false, {isPass:true, mine:true, type:'normal', yards:9}],
+      ['WR', false, {isPass:true, mine:false, type:'normal', yards:9}],
+      ['DB', true, {isPass:true, mine:true, type:'turnover', yards:0}],
+      ['LB', true, {isPass:false, mine:true, type:'normal', yards:3}],
+      ['EDGE', true, {isPass:true, mine:true, type:'loss', yards:-6}],
+      ['EDGE', true, {isPass:true, mine:false, type:'loss', yards:-6}],
+    ];
+    cases.forEach(([pos,def,res])=>{
+      S.position=pos; S.defMode=def;
+      G.feMakeEnts(50);
+      try{ G.buildPlay(50, res, 50+res.yards, false); }catch(e){ n++; bad.push(pos+' threw: '+e.message); return; }
+      n++;
+      const tagged = G.FE.ents.filter(e=>e.isYou);
+      const expectTag = res.mine && (pos!=='EDGE' || true);   // EDGE's ring is set only once the sack rolls a rusher, which buildPlay does internally on this exact 'loss' case
+      if(expectTag && tagged.length===0) bad.push(pos+' mine=true but nobody was tagged YOU');
+      if(!res.mine && pos!=='QB' && tagged.length>0) bad.push(pos+' mine=false but someone was tagged YOU');
+    });
+    return { pass: bad.length===0, detail: bad.length ? bad.join(' | ') : n+' scenarios built without throwing, YOU tag matched credit each time' };
+  });
+
+  // ---- offense: plans pay off by fit ----
+  check('Offense plans: Ball Control and Air Raid only beat Balanced at their own end of the fit range', ()=>{
+    const bal = planPts(offense,'balanced',0);
+    const c = [-1,0,1].map(l=>planPts(offense,'control',l)-bal), a = [-1,0,1].map(l=>planPts(offense,'airraid',l)-bal);
+    return { pass: c[0]>=1.0 && c[1]<=-0.8 && c[2]<=-3 && a[2]>=1.0 && a[1]<=-0.8 && a[0]<=-3,
+      detail:'vs Balanced at fit -1/0/+1 (points per game): Ball Control '+c.map(f1).join(' / ')+' | Air Raid '+a.map(f1).join(' / ') };
+  });
+  check('Offense signature drives: Attack vs Safe flips with fit and is even at fit 0', ()=>{
+    const d = [-1,0,1].map(l=>(sigPts(offense,'attack',l)-sigPts(offense,'safe',l))/4);
+    return { pass: d[0]<=-1.0 && Math.abs(d[1])<=0.7 && d[2]>=1.0, detail:'Attack minus Safe at fit -1/0/+1 (points per game, 3 drives): '+d.map(f1).join(' / ') };
+  });
+  check('Balanced does not depend on the matchup', ()=>{
+    const b = [-1,0,1].map(l=>planPts(offense,'balanced',l));
+    return { pass: Math.max(...b)-Math.min(...b)<=0.8, detail:'Balanced points at fit -1/0/+1: '+b.map(f1).join(' / ') };
+  });
+
+  // ---- defense mirrors it ----
+  check('Defense plans: pressure and containment each pay only at their own end', ()=>{
+    const bal = planPts(defense,'balanced',0);
+    const c = [-1,0,1].map(l=>planPts(defense,'control',l)-bal), a = [-1,0,1].map(l=>planPts(defense,'airraid',l)-bal);
+    // points allowed: negative is better for the defense
+    return { pass: c[0]<=-1.0 && c[1]>=0.8 && c[2]>=3 && a[2]<=-1.0 && a[1]>=0.8 && a[0]>=3,
+      detail:'points allowed vs Balanced at offense lean -1/0/+1: Bend Don\'t Break '+c.map(f1).join(' / ')+' | All-Out Pressure '+a.map(f1).join(' / ') };
+  });
+  check('Defense signature drives: Blitz vs Contain flips with fit', ()=>{
+    const d = [-1,0,1].map(l=>(sigPts(defense,'attack',l)-sigPts(defense,'safe',l))/4);
+    return { pass: d[0]>=1.0 && Math.abs(d[1])<=0.7 && d[2]<=-1.0, detail:'Blitz minus Contain, points allowed at offense lean -1/0/+1: '+d.map(f1).join(' / ') };
+  });
+
+  // ---- shape ----
+  check('Conservative calls still allow some big plays (never zero)', ()=>{
+    function rate(plan){ offense(plan,0); let big=0, plays=0; for(let i=0;i<3000;i++){ const D=G.newDrive(1); while(!D.over){ const ev=G.stepDrive(D); if(ev.kind==='play'){ plays++; if(ev.result.type==='explosive') big++; } } } return big/plays; }
+    const c=rate('control'), b=rate('balanced'), a=rate('airraid');
+    return { pass: c>0.002 && c<b && b<a, detail:'explosive plays per play: Ball Control '+(c*100).toFixed(2)+'% | Balanced '+(b*100).toFixed(2)+'% | Air Raid '+(a*100).toFixed(2)+'%' };
+  });
+
+  // ---- hints ----
+  check('A defender\'s draft hint reads the defense side of the matchup', ()=>{
+    S.position='DB'; S.slots=uni(ATTRS.DB,82); S.defMode=false; S.team={defRating:70,favors:[],offRating:82,offFavors:[],lean:0.8,offLean:-0.6};
+    const txt = G.fitNote();
+    return { pass: txt==='patience fits this matchup', detail:'lean +0.8 (offense side) vs offLean -0.6 (defense side), sim idle: "'+txt+'"' };
+  });
+  check('Every daily opponent has a lean on both sides', ()=>{
+    const bad = G.TEAMS.filter(t=>!(typeof t.lean==='number' && typeof t.offLean==='number' && Math.abs(t.lean)<=1 && Math.abs(t.offLean)<=1)).map(t=>t.id);
+    return { pass: bad.length===0, detail: bad.length ? 'missing/invalid: '+bad.join(', ') : G.TEAMS.length+' teams ok' };
+  });
+
+  // ---- daily targets ----
+  check('Daily targets match a simulated 82-OVR reference build (within 1 point)', ()=>{
+    const mean = a=>a.reduce((x,y)=>x+y,0)/a.length;
+    function ref(team,pos,def){ S.position=pos; S.slots={}; G.POSITIONS[pos].attrs.forEach(k=>S.slots[k]=82); S.team=team; S.plan='balanced'; S.defMode=def; let s=0; for(let i=0;i<1200;i++) s+=G.simGamePure(); return s/1200; }
+    const off = G.TEAMS.map(t=>[t.id,t.target,mean(['QB','RB','WR','OL'].map(p=>ref(t,p,false)))]);
+    const def = G.TEAMS.map(t=>[t.id,t.allowTarget,mean(['EDGE','DB','LB'].map(p=>ref(t,p,true)))]);
+    const bad = off.concat(def).filter(r=>Math.abs(r[1]-r[2])>1.0).map(r=>r[0]+' '+r[1]+' vs '+f1(r[2]));
+    return { pass: bad.length===0, detail: bad.length ? 'off target: '+bad.join('; ') : 'largest gap '+f1(Math.max(...off.concat(def).map(r=>Math.abs(r[1]-r[2]))))+' points' };
+  });
+
+  // ---- meters ----
+  function seasonWins(mode, meter, val, N, pos){
+    let tot=0;
+    for(let i=0;i<N;i++){
+      const P=pos||'QB'; S.draftMode=mode; S.position=P;
+      S.slots = mode==='player' ? uni(G.POSITIONS[P].attrs,85) : {REC:85,SCH:85,DEV:85,DIS:85,MOT:85,MGT:85,RES:85,CLU:85};
+      const C=G.newCareer(mode,'T'); const team=C.league.slice().sort((a,b)=>Math.abs(a.rating-78)-Math.abs(b.rating-78))[0];
+      G.joinProgram(team); G.newSeason(); C.meters={conf:50,resp:50,fans:50}; C.meters[meter]=val;
+      C.season.games.forEach(g=>{ if(g.kind!=='post' && G.resolveQuick(g).W) tot++; });
+    }
+    return tot/N;
+  }
+  const meterCheck = (label, mode, meter, lo, hi, min, pos)=>()=>{ const d = seasonWins(mode,meter,hi,500,pos)-seasonWins(mode,meter,lo,500,pos); return { pass:d>=min, detail:label+' '+lo+' to '+hi+': +'+f1(d)+' wins out of 12 (needs at least +'+min+')' }; };
+  check('Confidence moves a player\'s wins', meterCheck('Player Confidence','player','conf',20,80,1.2));
+  check('Confidence moves a non-QB\'s wins too', meterCheck('Running back Confidence','player','conf',20,80,0.9,'RB'));
+  check('Fans move a player\'s wins', meterCheck('Player Fans','player','fans',10,90,0.6));
+  check('Respect moves a player\'s wins', meterCheck('Player Respect','player','resp',10,90,0.4));
+  check('Team belief moves a coach\'s wins', meterCheck('Coach Team belief','coach','conf',20,80,1.3));
+  check('Fan energy moves a coach\'s wins', meterCheck('Coach Fan energy','coach','fans',10,90,0.5));
+
+  // ---- risky answers ----
+  check('Risky answers: about even with safe at average standing, better when strong, worse when weak', ()=>{
+    const worst = { mid:[9,-9], strong:9, weak:-9 }; let n=0; const bad=[]; let lo=99, hiS=-99, hiW=-99;
+    for(const mode of ['player','coach']){
+      S.draftMode=mode; S.position='QB'; S.slots = mode==='player' ? uni(ATTRS.QB,80) : {REC:80,SCH:80,DEV:80,DIS:80,MOT:80,MGT:80,RES:80,CLU:80};
+      const C=G.newCareer(mode,'T'); G.joinProgram(C.league[3]); G.newSeason();
+      const opp = C.league.find(x=>!x.isUser);
+      const at=(conf,resp,streak)=>{ C.meters={conf,resp,fans:50}; C.season.streak=streak; };
+      for(const ev of G.EVENTS){
+        if(ev.modes && !ev.modes.includes(mode)) continue;
+        const scenes = ev.id==='presser' ? [true,false].map(w=>ev.build({res:{W:w},opp,g:{kind:'reg'}})) : [ev.build({res:{W:true},opp,g:{kind:'reg'}})];
+        scenes.forEach(raw=>{
+          const sc = G.priceScene(raw);
+          const S0 = Math.max(...sc.opts.filter(o=>!o.risky).map(o=>G.mval(o.good)+G.modVal(o.mod)));
+          sc.opts.filter(o=>o.risky).forEach(o=>{
+            const g=G.mval(o.good)+G.modVal(o.mod), b=G.mval(o.bad)+G.modVal(o.badMod||o.mod), ev_=p=>p*g+(1-p)*b;
+            at(50,50,0); const mid=ev_(G.landProb(o))-S0; at(85,75,3); const st=ev_(G.landProb(o))-S0; at(20,25,-3); const wk=ev_(G.landProb(o))-S0;
+            n++; lo=Math.min(lo,mid); hiS=Math.max(hiS,-st); hiW=Math.max(hiW,wk);
+            if(!(mid>=-2.5 && mid<=0.5 && st>=1.0 && wk<=-3.0)) bad.push(mode+':'+ev.id+' "'+o.label+'" weak '+f1(wk)+' mid '+f1(mid)+' strong '+f1(st));
+          });
+        });
+      }
+    }
+    return { pass: bad.length===0 && n>=20, detail: bad.length ? bad.join(' | ') : n+' risky options checked; every one is within -2.5..+0.5 of safe at average standing, at least +1 when strong and at most -3 when weak' };
+  });
+
+  // ---- respect ----
+  check('A game you sit out neither costs nor earns Respect', ()=>{
+    S.draftMode='player'; S.position='QB'; S.slots=uni(ATTRS.QB,80);
+    const C=G.newCareer('player','T'); G.joinProgram(C.league[3]); C.recentEv=[]; G.newSeason();
+    const g=C.season.games.find(x=>x.kind==='reg'); C.meters={conf:50,resp:20,fans:50}; C.flags.sit=true;
+    const rec=G.makeGameRecord(g,{my:10,opp:30,W:false}); G.applyGame(g,rec);
+    return { pass: C.meters.resp===20, detail:'Respect 20 before, '+C.meters.resp+' after a loss you sat out' };
+  });
+  check('Low Respect is recoverable inside a season, and the bench stays occasional', async ()=>{
+    async function seasons(R0,N){
+      let resp=0, bench=0, up=0;
+      for(let i=0;i<N;i++){
+        S.draftMode='player'; S.position='QB'; S.slots=uni(ATTRS.QB,85);
+        const C=G.newCareer('player','T'); const team=C.league.slice().sort((a,b)=>Math.abs(a.rating-78)-Math.abs(b.rating-78))[0];
+        G.joinProgram(team); C.recentEv=[]; C.autoLog=[]; C.autopilot=true; const s=G.newSeason(); C.meters={conf:50,resp:R0,fans:50}; const before=C.story.length;
+        for(s.idx=0;s.idx<s.games.length;s.idx++) await G.runWeek(s.games[s.idx]);
+        resp+=C.meters.resp; bench+=C.story.slice(before).filter(x=>/^Benched/.test(x.text)).length; if(C.meters.resp>=25) up++;
+      }
+      return { resp:resp/N, bench:bench/N, up:up/N };
+    }
+    const a = await seasons(12, 60);
+    return { pass: a.resp>=28 && a.up>=0.7 && a.bench<=2.5, detail:'starting at Respect 12: ends the season at '+f1(a.resp)+', '+Math.round(a.up*100)+'% back above 25, benched '+a.bench.toFixed(1)+' games (needs 28+, 70%+, at most 2.5)' };
+  });
+
+  // ---- film room: a pull never has nothing to offer ----
+  check('Pulling a file always finds at least one real upgrade, even for a near-maxed build', ()=>{
+    S.draftMode='player'; S.position='QB'; const cfg = G.draftCfg();
+    const levels = [70, 85, 94, 99];
+    const bad = [];
+    levels.forEach(lvl=>{
+      const cur = {}; cfg.attrs.forEach(k=>cur[k]=lvl);
+      let zero = 0, n = 400;
+      for(let i=0;i<n;i++){ const p = G.drawFilmPick(cfg, cur); if(!cfg.attrs.some(k=>p.stats[k]>cur[k])) zero++; }
+      if(lvl<99 && zero>0) bad.push('at '+lvl+': '+zero+'/'+n+' pulls had nothing to offer');
+    });
+    return { pass: bad.length===0, detail: bad.length ? bad.join('; ') : 'every pull below the 99 cap offered a real upgrade, at OVR 70/85/94' };
+  });
+  check('The film-room nudge never pushes an attribute past the 99 cap', ()=>{
+    S.draftMode='player'; S.position='QB'; const cfg = G.draftCfg();
+    const cur = {}; cfg.attrs.forEach(k=>cur[k]=99);
+    let over = 0, n = 300;
+    for(let i=0;i<n;i++){ const p = G.drawFilmPick(cfg, cur); if(cfg.attrs.some(k=>p.stats[k]>99)) over++; }
+    return { pass: over===0, detail: over===0 ? 'no pull exceeded 99 across '+n+' tries at a maxed build' : over+'/'+n+' pulls exceeded the cap' };
+  });
+
+  // ---- the character file ----
+  check('Every look renders: all hair, face, and gear combinations draw a portrait', ()=>{
+    let n=0, bad=[];
+    const combos = (traits)=> traits.reduce((acc,tr)=>{ const out=[]; acc.forEach(a=>tr.opts.forEach(o=>out.push(Object.assign({},a,{[tr.key]:o[0]})))); return out; }, [{}]);
+    ['player','coach'].forEach(mode=>combos(G.LOOK_TRAITS[mode]).forEach((c,i)=>{
+      const look = Object.assign({ coach:mode==='coach', skin:'#c48450', hairColor:'#3a2417', jersey:'#356a92', num:12 }, c);
+      const svg = G.avatarSVG(look); n++;
+      if(!/^<svg/.test(svg.trim()) || /undefined|NaN/.test(svg) || svg.indexOf('#c48450')<0) bad.push(mode+' '+JSON.stringify(c));
+    }));
+    return { pass: bad.length===0 && n>1000, detail: bad.length ? bad.length+' failed, e.g. '+bad[0] : n+' combinations rendered' };
+  });
+  check('The portrait wears the school\'s color and the chosen number', ()=>{
+    S.draftMode='player'; S.position='QB'; S.slots=uni(ATTRS.QB,80);
+    const C=G.newCareer('player','T'); G.joinProgram(C.league[3]); C.char={hometown:'Dothan, AL',number:34,bg:'hero'};
+    const svg = G.charPortrait();
+    return { pass: svg.indexOf(C.school.accent)>=0 && svg.indexOf('>34<')>=0, detail:'school color '+C.school.accent+' and #34 both on the portrait' };
+  });
+  function firstSeasonWins(mode, bg, N){
+    let tot=0;
+    for(let i=0;i<N;i++){
+      S.draftMode=mode; S.position='QB'; S.slots = mode==='player' ? uni(ATTRS.QB,85) : {REC:85,SCH:85,DEV:85,DIS:85,MOT:85,MGT:85,RES:85,CLU:85};
+      const C=G.newCareer(mode,'T'); const team=C.league.slice().sort((a,b)=>Math.abs(a.rating-78)-Math.abs(b.rating-78))[0];
+      G.joinProgram(team); C.char={hometown:'X, XX',number:7,bg}; G.newSeason();
+      C.meters = mode==='player' ? {conf:50,resp:50,fans:32} : {conf:55,resp:60,fans:40}; G.applyBackground();
+      C.season.games.forEach(g=>{ if(g.kind!=='post' && G.resolveQuick(g).W) tot++; });
+    }
+    return tot/N;
+  }
+  ['player','coach'].forEach(mode=>check('No '+(mode==='player'?'Five-Star':'Hot Seat')+' background is a free pick in year one', ()=>{
+    const ids = G.BACKGROUNDS[mode].map(b=>b.id), w = ids.map(id=>firstSeasonWins(mode,id,500)), mean = w.reduce((a,b)=>a+b,0)/w.length;
+    const spread = ids.map((id,i)=>id+' '+(w[i]-mean>=0?'+':'')+f1(w[i]-mean));
+    return { pass: w.every(x=>x-mean<=0.45 && x-mean>=-0.9), detail:'wins in the first season vs the average background: '+spread.join(', ')+' (later-years perks not counted)' };
+  }));
+
+  // ---- saving ----
+  check('A saved career comes back with the school linked to the league', ()=>{
+    W.__GG_SAVETEST = true; S.draftMode='player'; S.position='QB'; S.slots=uni(ATTRS.QB,80);
+    const C=G.newCareer('player','Saver'); G.joinProgram(C.league[2]); C.recentEv=[]; C.autoLog=[]; G.newSeason();
+    G.saveCareer('week'); const sv=G.readSave(); G.clearSave(); W.__GG_SAVETEST = false;
+    const ok = !!sv && sv.phase==='week' && sv.C.school===sv.C.league.find(t=>t.isUser) && sv.C.name==='Saver';
+    return { pass: ok, detail: ok ? 'round-trip ok' : 'save did not come back intact' };
+  });
+
+  // ---- run ----
+  const tbody = document.querySelector('#out tbody'); let failed = 0;
+  for(const r of rows){
+    seed(20240921);
+    let res; try{ res = await r.fn(); }catch(e){ res = { pass:false, detail:'threw: '+e.message }; }
+    if(!res.pass) failed++;
+    results.push({ name:r.name, pass:res.pass, detail:res.detail });
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td class="'+(res.pass?'pass':'fail')+'">'+(res.pass?'PASS':'FAIL')+'</td><td>'+r.name+'</td><td class="d">'+res.detail.replace(/</g,'&lt;')+'</td>';
+    tbody.appendChild(tr);
+    await new Promise(r=>setTimeout(r,0));
+  }
+  const b = document.getElementById('banner');
+  b.className = failed ? 'bad' : 'ok';
+  b.textContent = failed ? failed+' of '+rows.length+' checks FAILED' : 'All '+rows.length+' checks passed';
+  document.title = (failed ? 'FAIL ' : 'PASS ')+document.title;
+  window.__TEST_RESULTS = { failed, total: rows.length, results };
+})();
+</script>

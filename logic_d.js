@@ -167,6 +167,7 @@
     setAuthField('authPassword', mode==='name' || mode==='account');
     $('authNameField').hidden = mode!=='signup' && mode!=='name';
     $('authSwitchWrap').hidden = mode!=='login' && mode!=='signup';
+    $('authOauth').hidden = (mode!=='login' && mode!=='signup') || !backendHasAuth();
     if(mode==='account'){
       $('authTag').textContent = 'Your account';
       $('authLede').textContent = 'Logged in as '+escLb(authUser?authUser.email:'')+'.';
@@ -255,13 +256,29 @@
     }catch(e){ err.textContent = 'Network error. Try again.'; err.hidden = false; }
     finally{ if($('authSubmit')) $('authSubmit').disabled = false; }
   }
+  // Google sign-in rides Netlify Identity's own hosted OAuth redirect (no extra client SDK needed): navigate away,
+  // Google authenticates, GoTrue redirects back with the session token in the URL hash. That's a full page
+  // navigation each way, so it uses the same stashResume()/resumeAfterReload() pair the email/password login uses.
+  function startGoogleLogin(){
+    stashResume();
+    location.href = '/.netlify/identity/authorize?provider=google';
+  }
+  function captureOAuthHash(){
+    if(location.hash.indexOf('access_token=')===-1) return;
+    const token = new URLSearchParams(location.hash.slice(1)).get('access_token');
+    history.replaceState(null, '', location.pathname + location.search);
+    if(!token) return;
+    try{ document.cookie = 'nf_jwt='+token+'; path=/; max-age=3600; samesite=lax'; }catch(e){}
+  }
   async function initAccountUI(){
     const btn = $('btnAccount'); if(!btn) return;
+    captureOAuthHash();
     btn.addEventListener('click', ()=>{ openAuthModal(authUser ? 'account' : 'login'); });
     $('authClose').addEventListener('click', closeAuthModal);
     $('authModal').addEventListener('click', (e)=>{ if(e.target.id==='authModal') closeAuthModal(); });
     $('authSubmit').addEventListener('click', submitAuthForm);
     $('authSwitch').addEventListener('click', ()=>{ openAuthModal(authModalMode==='signup' ? 'login' : 'signup'); });
+    const g = $('authGoogle'); if(g) g.addEventListener('click', startGoogleLogin);
     await checkAuth();
     await resumeAfterReload();
   }

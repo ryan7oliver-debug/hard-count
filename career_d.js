@@ -817,8 +817,15 @@
     try{ ok = store.set(SAVE_KEY, JSON.stringify({ ver:SAVE_VER, phase, at:Date.now(), avatar:state.avatar, C })); }catch(e){ ok = false; }
     const note = $('saveNote');
     if(note){ if(!ok && !saveWarned){ saveWarned = true; note.hidden = false; } else if(ok){ note.hidden = true; } }
+    if(ok) pushCloudSave();   // best-effort mirror to the account, if one is signed in -- see logic_d.js
   }
-  function clearSave(){ store.del(SAVE_KEY); }
+  function clearSave(){ store.del(SAVE_KEY); clearCloudSave(); }
+  // the career screen's explicit "leave" button -- the checkpoint is already current (saveCareer just ran
+  // at the top of this week/phase), so this just needs to get back to the hub, not force another save.
+  function exitCareerToHub(){
+    resetTeamAccent();
+    showScreen('screen-hub');
+  }
   function readSave(){
     try{
       const raw = store.get(SAVE_KEY); if(!raw) return null;

@@ -270,6 +270,35 @@
     if(!token) return;
     try{ document.cookie = 'nf_jwt='+token+'; path=/; max-age=3600; samesite=lax'; }catch(e){}
   }
+  // ---------- cloud career save (optional infrastructure, tied to the account) ----------
+  // Careers already checkpoint to localStorage (SAVE_KEY, career_d.js) -- this mirrors that same envelope
+  // to the account so a career follows you to a different device/browser. Local storage stays the source
+  // of truth on the device you're actually playing on; the cloud copy is just kept in sync with it, and
+  // only ever adopted locally when it's demonstrably newer (by the envelope's own "at" timestamp).
+  async function pushCloudSave(){
+    if(!authUser) return;
+    try{
+      const raw = store.get(SAVE_KEY); if(!raw) return;
+      await fetch('/api/career-save', { method:'POST', headers:{'content-type':'application/json'}, body: raw });
+    }catch(e){}
+  }
+  async function clearCloudSave(){
+    if(!authUser) return;
+    try{ await fetch('/api/career-save', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({clear:true}) }); }catch(e){}
+  }
+  async function pullCloudSave(){
+    if(!authUser) return false;
+    try{
+      const r = await fetch('/api/career-save');
+      if(!r.ok) return false;
+      const d = await r.json();
+      if(!d || !d.save) return false;
+      const local = store.get(SAVE_KEY);
+      const localAt = local ? (JSON.parse(local).at||0) : 0;
+      if((d.save.at||0) > localAt){ store.set(SAVE_KEY, JSON.stringify(d.save)); return true; }
+    }catch(e){}
+    return false;
+  }
   async function initAccountUI(){
     const btn = $('btnAccount'); if(!btn) return;
     captureOAuthHash();
@@ -280,6 +309,7 @@
     $('authSwitch').addEventListener('click', ()=>{ openAuthModal(authModalMode==='signup' ? 'login' : 'signup'); });
     const g = $('authGoogle'); if(g) g.addEventListener('click', startGoogleLogin);
     await checkAuth();
+    if(authUser){ const adopted = await pullCloudSave(); if(adopted) renderResume(); else pushCloudSave(); }
     await resumeAfterReload();
   }
   // the login gate for Five-Star / Hot Seat: only enforced once we've confirmed the auth functions are live

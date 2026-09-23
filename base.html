@@ -2439,6 +2439,7 @@
     ['btnBackHub1','btnBackHub2','btnBackHub3','btnBackHub4','btnBackHub5'].forEach(id=>{
       const el = $(id); if(el) el.addEventListener('click', ()=>{ resetTeamAccent(); showScreen('screen-hub'); });
     });
+    const exitBtn = $('btnCareerExit'); if(exitBtn) exitBtn.addEventListener('click', exitCareerToHub);
 
     $('btnSeeMatchup').addEventListener('click', ()=>{ renderPreview(); showScreen('screen-preview'); });
     $('btnGoDraft').addEventListener('click', ()=>{ resetDraft('player','daily'); showScreen('screen-draft'); });

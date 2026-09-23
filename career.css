@@ -10,6 +10,11 @@
   .name-input:focus-visible{outline:3px solid var(--amber-hi);outline-offset:2px;}
 
   #screen-career{max-width:760px;}
+  .btn-career-exit{
+    display:inline-block;margin:0 0 16px;padding:0;background:none;border:0;cursor:pointer;
+    font-family:var(--font-type);font-size:0.86rem;font-weight:600;color:var(--chalk-soft);
+  }
+  .btn-career-exit:hover{color:var(--amber);}
   .car-head:empty,.meter-board:empty,.wk-strip:empty,.car-stage:empty,.car-feed:empty{display:none;}
   .car-head{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:flex-end;justify-content:space-between;margin-bottom:18px;}
   .car-id h2{font-size:2.3rem;color:var(--chalk);margin-top:10px;}

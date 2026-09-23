@@ -78,4 +78,4 @@
       <p class="odds-foot">Projected ${o.def?'points allowed':'score'}: <b>${o.avg.toFixed(1)}</b> · a better build means better odds — re-draft attributes to move this.</p>`;
   }
 
-  window.__GG = Object.assign(window.__GG||{}, {TUNE,state,TEAMS,POSITIONS,estimateOdds,simGamePure,buildQ,newDrive,stepDrive,resolvePlay,involvement,playCaption,resetBox,creditPlay,styleFit,buildLean,scoutRead,hashLean,fitNote,seedRng,unseedRng,readDaily,nextStreak,liveStreak,recordDailyResult,dayKey,yesterdayKey,DAILY_KEY,draftAttribute,resetDraft,PREMIUM_CAP,PREMIUM_LIMIT,leaderboardName,setLeaderboardName,renderLeaderboardList,showDailyLeaderboard});
+  window.__GG = Object.assign(window.__GG||{}, {TUNE,state,TEAMS,POSITIONS,estimateOdds,simGamePure,buildQ,newDrive,stepDrive,resolvePlay,involvement,playCaption,resetBox,creditPlay,styleFit,buildLean,scoutRead,hashLean,fitNote,seedRng,unseedRng,readDaily,nextStreak,liveStreak,recordDailyResult,dayKey,yesterdayKey,DAILY_KEY,draftAttribute,resetDraft,PREMIUM_CAP,PREMIUM_LIMIT,leaderboardName,setLeaderboardName,renderLeaderboardList,showDailyLeaderboard,careerScore,renderCareerLeaderboardList});

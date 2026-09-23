@@ -659,6 +659,53 @@
     return false;
   }
 
+  // ---------- coach offseason: recruiting + staff flavor pools ----------
+  // Text-only variety -- the ratings math below is untouched and still what's tuned/tested. Only which recruit
+  // is on the board, how the signing lands, and which staff spot opens up change from year to year now.
+  const RECRUIT_TARGETS = [
+    { label:'a five-star quarterback', short:'the quarterback' },
+    { label:'a five-star edge rusher', short:'the pass rusher' },
+    { label:'a five-star receiver', short:'the receiver' },
+    { label:'a five-star left tackle', short:'the tackle' },
+    { label:'a five-star cornerback', short:'the corner' },
+    { label:'a five-star running back', short:'the running back' },
+    { label:'a five-star linebacker', short:'the linebacker' },
+  ];
+  const RECRUIT_WIN_TXT = [
+    (short, place)=>`The signing is official: ${short} picks ${place}. The whole class follows.`,
+    short=>`It's a live broadcast commitment — ${short} signs on national signing day.`,
+    short=>`The staff lands ${short} in the eleventh hour, and the class jumps in the rankings.`,
+  ];
+  const RECRUIT_LOSE_TXT = [
+    short=>`Bad news off the board: ${short} goes elsewhere. The class is thin.`,
+    short=>`It's official — ${short} picks a rival on signing day. The board scrambles for a plan B.`,
+    short=>`The staff loses ${short} at the wire, and the phones do not stop ringing.`,
+  ];
+  const RECRUIT_DEPTH_TXT = [
+    'A steady, deep class. Nothing flashy, everything usable.',
+    'Twenty-two signatures, not a headline among them, and a two-deep that actually holds up.',
+    'The class grades out average on the recruiting sites and well ahead of it on the practice field.',
+  ];
+  const RECRUIT_PORTAL_TXT = [
+    'Portal money buys instant help.',
+    'Three portal transfers sign in a week. The roster looks different by August.',
+    'The transfer haul plugs the two biggest holes on the depth chart overnight.',
+  ];
+  const STAFF_HIRE_EVENTS = [
+    { tag:'Staff room', speaker:CAST.beat, ask:`An NFL team wants your offensive coordinator. Promote from within, or go big on a name hire?`,
+      opts:[ O('Promote from within','Keep continuity',{ good:{conf:1,resp:1,fans:0}, quote:'"He knows our guys. Nothing changes."' }),
+             O('Hire a big name','Make a splash',{ risky:true, land:0.55, good:{conf:3,resp:1,fans:4}, bad:{conf:-2,resp:-3,fans:-1}, quote:'"We got the best coordinator available. Watch what he does with this group."' }) ] },
+    { tag:'Staff room', speaker:CAST.beat, ask:`Your defensive coordinator just interviewed for a head coaching job across the conference. Match his ask, or let him walk and promote the linebackers coach?`,
+      opts:[ O('Match the ask','Pay to keep continuity',{ good:{conf:0,resp:2,fans:0}, quote:'"We take care of our own. He\'s staying."' }),
+             O('Let him walk','Promote from the room',{ risky:true, land:0.5, good:{conf:2,resp:2,fans:1}, bad:{conf:-2,resp:-4,fans:0}, quote:'"New voice, same standard. We\'re not slowing down."' }) ] },
+    { tag:'Staff room', speaker:{name:'Marlene Osei',role:'Athletic director',outlet:'Athletics'}, ask:`The strength staff is asking for a real budget bump — new equipment, another assistant, the works. Fund it, or hold the line?`,
+      opts:[ O('Fund it','Invest in the room',{ risky:true, land:0.55, good:{conf:3,resp:0,fans:0}, bad:{conf:-1,resp:-3,fans:0}, quote:'"If we want to hold up in November, we pay for it in June."' }),
+             O('Hold the line','Not this year',{ good:{conf:0,resp:1,fans:0}, quote:'"We make do with what we\'ve got. Same as always."' }) ] },
+    { tag:'Staff room', speaker:CAST.analyst, ask:`A hotshot young recruiter from a rival staff is available, and the price is steep for a first-time coordinator hire. Take the swing, or stay the course?`,
+      opts:[ O('Take the swing','Bet on the young hire',{ risky:true, land:0.5, good:{conf:2,resp:0,fans:2}, bad:{conf:-2,resp:-2,fans:-1}, quote:'"He\'s hungry, and hungry wins recruiting battles."' }),
+             O('Stay the course','Trust the current staff',{ good:{conf:0,resp:1,fans:0}, quote:'"We\'re not chasing every name on the market. We trust our people."' }) ] },
+  ];
+
   // ---------- coach offseason ----------
   async function coachOffseason(){
     const s = C.season, co = C.co;
@@ -689,17 +736,18 @@
     await filmRoom();
     // recruiting
     const rec = co.attrs.REC;
+    const target = U.pick(RECRUIT_TARGETS);
     const i = await stagePick(`<div class="scene"><p class="tape scene-tag">Recruiting</p>
       <div class="speaker"><b>${CAST.analyst.name}</b><span>${CAST.analyst.role} · ${CAST.analyst.outlet}</span></div>
-      <p class="scene-line">Signing class is on the board. Recruiting rating: <b>${rec}</b>. How do you build it?</p></div>`, [
-      { label:'Chase the five-star', sub:'Swing for a program-changing name', risky:true },
+      <p class="scene-line">Signing class is on the board — ${target.label} headlines it. Recruiting rating: <b>${rec}</b>. How do you build it?</p></div>`, [
+      { label:'Chase '+target.short, sub:'Swing for a program-changing name', risky:true },
       { label:'Sign the depth', sub:'A safe class of high-floor guys' },
       { label:'Splash in the portal', sub:'Buy help now — the locker room may grumble' }
     ]);
     let dRating = (rec-60)*0.10 + U.gauss()*1.0 + (co.class||0)*0.6 + (bgOf()==='recruiter' ? 0.6 : 0), txt = '', dm = {};
-    if(i===0){ const ok = U.chance(U.clamp(0.35+(rec-60)*0.008+(C.meters.fans-50)*0.003,0.2,0.75)); dRating += ok?4:-0.5; txt = ok?'The five-star signs. The whole class follows.':'The five-star goes elsewhere. The class is thin.'; dm = ok?{fans:5,conf:2}:{fans:-3,conf:-2}; }
-    else if(i===1){ dRating += 1.6; txt = 'A steady, deep class. Nothing flashy, everything usable.'; dm = {conf:1}; }
-    else { dRating += 3; txt = 'Portal money buys instant help.'; dm = {fans:3,conf:-2,resp:1}; }
+    if(i===0){ const ok = U.chance(U.clamp(0.35+(rec-60)*0.008+(C.meters.fans-50)*0.003,0.2,0.75)); dRating += ok?4:-0.5; txt = ok?U.pick(RECRUIT_WIN_TXT)(target.short, C.school.place):U.pick(RECRUIT_LOSE_TXT)(target.short); dm = ok?{fans:5,conf:2}:{fans:-3,conf:-2}; }
+    else if(i===1){ dRating += 1.6; txt = U.pick(RECRUIT_DEPTH_TXT); dm = {conf:1}; }
+    else { dRating += 3; txt = U.pick(RECRUIT_PORTAL_TXT); dm = {fans:3,conf:-2,resp:1}; }
     co.class = 0;
     const cls = C.school;
     cls.off = U.clamp(Math.round(cls.off + dRating*0.35), 50, 92); cls.def = U.clamp(Math.round(cls.def + dRating*0.35), 45, 92); cls.rating = Math.round((cls.off+cls.def)/2);
@@ -707,10 +755,7 @@
     await stageAsk(`<div class="scene"><p class="tape scene-tag">Signing day</p><p class="scene-line">${txt}</p><p class="wk-rec">Program rating now ${cls.rating}</p>${deltaPlates(d)}</div>`, [{id:'c',label:'Next season ▸'}]);
     // staff
     if(U.chance(0.3)){
-      const ev = { build:()=>({ tag:'Staff room', speaker:CAST.beat, ask:`An NFL team wants your offensive coordinator. Promote from within, or go big on a name hire?`,
-        opts:[ O('Promote from within','Keep continuity',{ good:{conf:1,resp:1,fans:0}, quote:'"He knows our guys. Nothing changes."' }),
-               O('Hire a big name','Make a splash',{ risky:true, land:0.55, good:{conf:3,resp:1,fans:4}, bad:{conf:-2,resp:-3,fans:-1}, quote:'"We got the best coordinator available. Watch what he does with this group."' }) ] }) };
-      await doEvent(ev, { g:{kind:'reg'}, opp:null });
+      await doEvent({ build:()=>U.pick(STAFF_HIRE_EVENTS) }, { g:{kind:'reg'}, opp:null });
     }
     // program drift with coach development
     programDrift(); const dev = (co.attrs.DEV-72)*0.03;
@@ -865,6 +910,8 @@
     careerTable(C.hist.map(h=>[`Yr ${h.yr}${h.champ?' ★':''}${h.redshirt?' (RS)':''}`, h.school.split(' ')[0]+' · '+h.post, h.w+'–'+h.l+((h.pw||h.pl)?' (+'+h.pw+'–'+h.pl+')':'')]));
     $('legShareBox').textContent = 'FIVE-STAR — '+C.name+' · '+POSITIONS[C.pl.pos].label+'\n'+totalW+'–'+totalL+' across '+C.hist.length+' seasons · OVR '+Math.round(attrAvg())+'\n'+(heis?'Heisman winner · ':'')+(C.champs?C.champs+'× national champion · ':'')+(slot.round===0?'Undrafted':'Round '+slot.round+(slot.round===1?', pick '+slot.pick:''))+'\nConfidence '+C.meters.conf+' · Respect '+C.meters.resp+' · '+U.fans(fanCount())+' fans';
     $('legCopyStatus').textContent = '';
+    const pScore = careerScore('player', { totalW, totalL, heisman:heis, heisFinalist:fin, aa, champs:C.champs, confTitles:C.confTitles, draftRound:slot.round });
+    showCareerLeaderboard('player', pScore, heis?'Heisman winner':fin?'Heisman finalist':(slot.round===0?'Undrafted':'Round '+slot.round+' pick'), totalW+'–'+totalL, POSITIONS[C.pl.pos].label+' · '+C.school.name);
     resetTeamAccent(); showScreen('screen-legacy-results');
   }
   function finishCoachDynasty(){
@@ -890,6 +937,8 @@
     careerTable(C.hist.map(h=>[`Yr ${h.yr}${h.champ?' ★':''}`, h.post, h.w+'–'+h.l+((h.pw||h.pl)?' (+'+h.pw+'–'+h.pl+')':'')]));
     $('legShareBox').textContent = 'HOT SEAT — '+C.name+' · '+C.school.name+'\n'+totalW+'–'+totalL+' across '+C.hist.length+' seasons · '+C.champs+' national title(s)'+(hof?' · HALL OF FAME':'')+(C.fired?' · fired':'')+'\nTeam belief '+C.meters.conf+' · Job security '+C.meters.resp+' · '+U.fans(fanCount())+' fans';
     $('legCopyStatus').textContent = '';
+    const cScore = careerScore('coach', { totalW, totalL, champs:C.champs, confTitles:C.confTitles, cfpApps:C.cfpApps, hof, fired:C.fired });
+    showCareerLeaderboard('coach', cScore, hof?'Hall of Fame':C.champs?C.champs+'x champion':C.fired?'Fired':'Dynasty built', totalW+'–'+totalL, C.school.name);
     resetTeamAccent(); showScreen('screen-legacy-results');
   }
 
@@ -909,7 +958,8 @@
   function startPlayerCareer(){ return beginCareer('player'); }
   function startCoachDynasty(){ return beginCareer('coach'); }
 
-  function showLegacyIntro(mode){
+  async function showLegacyIntro(mode){
+    if(!(await requireLogin(mode))) return;
     resetTeamAccent();
     state.pendingLegacyMode = mode;
     $('legPosGroup').style.display = mode==='player' ? 'block' : 'none';

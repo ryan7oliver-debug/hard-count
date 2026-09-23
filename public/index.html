@@ -1,6 +1,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hard Count</title>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7782398264504712"
+     crossorigin="anonymous"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&family=Big+Shoulders+Display:wght@700;800;900&family=Big+Shoulders+Stencil+Display:wght@800;900&family=Permanent+Marker&family=Press+Start+2P&family=Special+Elite&display=swap">
 <style>
@@ -122,6 +124,14 @@
   .wm-top{font-size:0.72rem;letter-spacing:0.5em;color:var(--chalk-soft);padding-left:2px;}
   .wm-main{font-family:var(--font-display);font-weight:900;font-size:2rem;letter-spacing:0.07em;color:var(--chalk);}
   .scorebug-date{font-size:0.78rem;flex:none;}
+  .scorebug-right{display:flex;align-items:center;gap:12px;flex:none;}
+  .btn-account{
+    font-family:var(--font-type);font-size:0.76rem;font-weight:700;letter-spacing:0.02em;
+    color:var(--chalk);background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.28);
+    border-radius:3px;padding:5px 11px;cursor:pointer;flex:none;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .btn-account:hover{background:rgba(255,255,255,0.16);}
+  .btn-account[data-state="in"]{border-color:var(--amber);color:var(--amber);}
 
   main{max-width:920px;margin:0 auto;}
   .screen{display:none;padding-top:34px;}
@@ -528,6 +538,25 @@
   .lb-score{flex:none;font-family:var(--font-display);font-weight:900;font-size:1.15rem;color:var(--sheet-ink);min-width:32px;text-align:right;}
   .copy-status{font-size:0.86rem;color:var(--green);margin:8px 0 0;min-height:1em;}
 
+  /* ---------- account (career-mode login) ---------- */
+  .modal-overlay{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(5,6,7,0.72);}
+  .modal-overlay[hidden]{display:none;}
+  .auth-sheet{position:relative;width:min(380px,100%);padding:26px 24px 22px;}
+  .modal-close{position:absolute;top:10px;right:12px;width:30px;height:30px;border:0;background:none;color:var(--sheet-soft);font-size:1.3rem;line-height:1;cursor:pointer;}
+  .modal-close:hover{color:var(--sheet-ink);}
+  .auth-lede{font-family:var(--font-type);font-size:0.88rem;color:var(--sheet-soft);line-height:1.5;margin:2px 0 18px;}
+  .auth-field{margin-bottom:14px;}
+  .auth-field label{display:block;font-family:var(--font-mono);font-weight:600;font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--sheet-soft);margin-bottom:5px;}
+  .auth-field label small{text-transform:none;letter-spacing:0;font-weight:400;margin-left:4px;}
+  .auth-field input{
+    width:100%;box-sizing:border-box;font-family:var(--font-type);font-size:1rem;padding:10px 12px;
+    color:var(--sheet-ink);background:var(--card);border:2px solid var(--line);border-radius:2px;
+  }
+  .auth-field input:focus{outline:2px solid var(--amber);outline-offset:1px;}
+  .auth-error{font-size:0.86rem;color:var(--brick);margin:0 0 12px;min-height:1em;}
+  .auth-switch{font-family:var(--font-type);font-size:0.88rem;color:var(--sheet-soft);margin:14px 0 0;text-align:center;}
+  .link-btn{background:none;border:0;padding:0;color:var(--sheet-ink);font-weight:700;text-decoration:underline;cursor:pointer;font-family:inherit;font-size:inherit;}
+
   /* ---------- career / dynasty ---------- */
   .season-card{padding:20px 20px 16px;margin:0 0 20px;}
   .season-card.hof{box-shadow:0 0 0 3px var(--amber),5px 6px 0 rgba(0,0,0,0.42);}
@@ -799,7 +828,10 @@
       <svg class="goalpost" viewBox="0 0 28 32" aria-hidden="true"><path d="M5 2v11h18V2M14 13v17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="square"/></svg>
       <span class="wordmark"><span class="wm-top">Hard</span><span class="wm-main">Count</span></span>
     </span>
-    <span class="scorebug-date tape" id="todayDate">—</span>
+    <span class="scorebug-right">
+      <span class="scorebug-date tape" id="todayDate">—</span>
+      <button class="btn-account" id="btnAccount" hidden>Log in</button>
+    </span>
   </div>
 </header>
 
@@ -1102,6 +1134,7 @@
       <div class="share-box" id="legShareBox">—</div>
       <button class="btn btn-ghost btn-small" id="btnLegCopy">Copy result</button>
       <p class="copy-status" id="legCopyStatus"></p>
+      <div class="sheet lb-box" id="legLbBox" hidden></div>
       <div class="btn-row" style="margin-top:24px;">
         <button class="btn btn-primary" id="btnLegRestart">Build another</button>
         <button class="btn btn-ghost" id="btnBackHub4">‹ Back to the lockers</button>
@@ -1110,6 +1143,20 @@
   </section>
 
 </main>
+
+<div class="modal-overlay" id="authModal" hidden>
+  <div class="sheet auth-sheet">
+    <button class="modal-close" id="authClose" aria-label="Close">×</button>
+    <p class="tape" id="authTag">Log in</p>
+    <p class="auth-lede" id="authLede">Five-Star and Hot Seat save to an account, so your career finishes post to the leaderboard automatically.</p>
+    <div class="auth-field" id="authNameField" hidden><label for="authName">Name<small>shown on the leaderboard</small></label><input type="text" id="authName" maxlength="24" autocomplete="nickname"></div>
+    <div class="auth-field"><label for="authEmail">Email</label><input type="email" id="authEmail" autocomplete="email"></div>
+    <div class="auth-field"><label for="authPassword">Password</label><input type="password" id="authPassword" autocomplete="current-password"></div>
+    <p class="auth-error" id="authError" hidden></p>
+    <button class="btn btn-primary" id="authSubmit">Log in ▸</button>
+    <p class="auth-switch" id="authSwitchWrap">No account? <button class="link-btn" id="authSwitch">Sign up</button></p>
+  </div>
+</div>
 
 <footer class="site-footer">
   <p>Fan-made college football sim. Draftable legends are real, honoring real careers, and the schools you face are real programs. Every matchup, score, and record is simulated. Independent fan project, not affiliated with the NCAA or any school. All results are simulated for entertainment only.</p>
@@ -4000,6 +4047,201 @@
     runLeaderboardSubmitAndRender(res, name);
   }
 
+  // ---------- account (Netlify Identity, optional infrastructure) ----------
+  // Same fail-quiet shape as the leaderboard above: every call is try/catch'd, and on any host without the
+  // auth-* functions (the Claude Artifact, or Netlify before Identity is turned on) the account button just
+  // stays hidden and Five-Star / Hot Seat play exactly as they always have, with no login wall.
+  //
+  // Login and logout run as server-side mutations (see netlify/functions/auth-*.js) and set a session cookie
+  // on the response. A plain fetch() picks that cookie up, but the library that sets it documents a full page
+  // navigation as the reliable way to guarantee the browser has it before the next read -- so both paths end
+  // in a reload rather than patching local state in place. Anything worth resuming after (a pending Five-Star
+  // / Hot Seat launch, a name typed at signup) rides across that reload in sessionStorage.
+  const PROFILE_NAME_KEY = 'gg.profile.name', RESUME_KEY = 'gg.auth.resume';
+  let authUser = null, authChecked = false, authModalMode = 'login', pendingCareerMode = null, pendingProfileName = null;
+  function cachedProfileName(){ try{ return store.get(PROFILE_NAME_KEY); }catch(e){ return null; } }
+  let authAvailable = false;
+  async function checkAuth(){
+    if(authChecked) return authUser;
+    try{
+      const r = await fetch('/api/auth-user');
+      if(r.ok){ const d = await r.json(); authUser = d && d.user ? d.user : null; authAvailable = true; }
+      else authUser = null;
+    }catch(e){ authUser = null; }
+    authChecked = true;
+    renderAccountButton();
+    return authUser;
+  }
+  function backendHasAuth(){ return authAvailable; }   // only a genuinely successful /api/auth-user round trip counts
+  function renderAccountButton(){
+    const b = $('btnAccount'); if(!b) return;
+    if(!backendHasAuth()){ b.hidden = true; return; }
+    b.hidden = false;
+    b.dataset.state = authUser ? 'in' : 'out';
+    b.textContent = authUser ? (cachedProfileName() || authUser.email.split('@')[0]) : 'Log in';
+  }
+  function setAuthField(id, hidden){ const f = $(id); if(f){ const wrap = f.closest ? f.closest('.auth-field') : null; if(wrap) wrap.hidden = hidden; } }
+  function openAuthModal(mode){
+    const m = $('authModal'); if(!m) return;
+    authModalMode = mode;
+    $('authError').hidden = true; $('authError').textContent = '';
+    setAuthField('authEmail', mode==='name');
+    setAuthField('authPassword', mode==='name' || mode==='account');
+    $('authNameField').hidden = mode!=='signup' && mode!=='name';
+    $('authSwitchWrap').hidden = mode!=='login' && mode!=='signup';
+    if(mode==='account'){
+      $('authTag').textContent = 'Your account';
+      $('authLede').textContent = 'Logged in as '+escLb(authUser?authUser.email:'')+'.';
+      $('authSubmit').textContent = 'Log out';
+    } else if(mode==='name'){
+      $('authTag').textContent = 'One more thing';
+      $('authLede').textContent = 'Pick a name for the leaderboard.';
+      $('authName').value = '';
+      $('authSubmit').textContent = 'Save ▸';
+    } else {
+      $('authTag').textContent = mode==='signup' ? 'Sign up' : 'Log in';
+      $('authLede').textContent = 'Five-Star and Hot Seat save to an account, so a finished career posts to the leaderboard automatically.';
+      $('authEmail').value=''; $('authPassword').value=''; $('authName').value='';
+      $('authSwitch').textContent = mode==='signup' ? 'Log in instead' : 'Sign up';
+      $('authSubmit').textContent = mode==='signup' ? 'Sign up ▸' : 'Log in ▸';
+    }
+    m.hidden = false;
+    const f = mode==='name' ? $('authName') : mode==='account' ? null : $('authEmail');
+    if(f) f.focus();
+  }
+  function closeAuthModal(){ const m = $('authModal'); if(m) m.hidden = true; }
+  // resolves a display name without ever blocking on it -- caller checks whether it had to open the 'name' modal
+  async function ensureProfileName(freshName){
+    if(freshName){
+      try{
+        const r = await fetch('/api/profile', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({name:freshName}) });
+        if(r.ok) store.set(PROFILE_NAME_KEY, freshName);
+      }catch(e){}
+      return true;
+    }
+    if(cachedProfileName()) return true;
+    try{
+      const r = await fetch('/api/profile');
+      const d = r.ok ? await r.json() : null;
+      if(d && d.name){ store.set(PROFILE_NAME_KEY, d.name); return true; }
+    }catch(e){}
+    openAuthModal('name');
+    return false;
+  }
+  function stashResume(){
+    try{ sessionStorage.setItem(RESUME_KEY, JSON.stringify({ mode: pendingCareerMode, name: pendingProfileName })); }catch(e){}
+  }
+  async function resumeAfterReload(){
+    let stash = null;
+    try{ const raw = sessionStorage.getItem(RESUME_KEY); if(raw){ stash = JSON.parse(raw); sessionStorage.removeItem(RESUME_KEY); } }catch(e){}
+    if(!stash || !authUser) return;
+    pendingCareerMode = stash.mode || null;
+    const resolved = await ensureProfileName(stash.name || null);
+    if(resolved && pendingCareerMode){ const m = pendingCareerMode; pendingCareerMode = null; showLegacyIntro(m); }
+    // if resolving the name opened the 'name' modal instead, its own submit handler resumes pendingCareerMode
+  }
+  async function submitAuthForm(){
+    const err = $('authError'); err.hidden = true; $('authSubmit').disabled = true;
+    try{
+      if(authModalMode==='account'){
+        try{ await fetch('/api/auth-logout', { method:'POST' }); }catch(e){}
+        location.reload();
+        return;
+      }
+      if(authModalMode==='name'){
+        const name = $('authName').value.trim();
+        if(!name){ err.textContent = 'Enter a name.'; err.hidden = false; return; }
+        await ensureProfileName(name.slice(0,24));
+        renderAccountButton(); closeAuthModal();
+        if(pendingCareerMode){ const m=pendingCareerMode; pendingCareerMode=null; showLegacyIntro(m); }
+        return;
+      }
+      const email = $('authEmail').value.trim(), password = $('authPassword').value, name = $('authName').value.trim();
+      if(!email || !password){ err.textContent = 'Enter an email and password.'; err.hidden = false; return; }
+      if(authModalMode==='signup'){
+        if(password.length<8){ err.textContent = 'Password needs at least 8 characters.'; err.hidden = false; return; }
+        const r = await fetch('/api/auth-signup', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({email,password,name}) });
+        const d = await r.json().catch(()=>null);
+        if(!r.ok || !d || d.error){ err.textContent = (d&&d.error)||'Could not sign up. Try again.'; err.hidden = false; return; }
+        pendingProfileName = name || null;
+        openAuthModal('login');
+        err.textContent = 'Account created — log in below.'; err.hidden = false;
+        $('authEmail').value = email;
+        return;
+      }
+      const r = await fetch('/api/auth-login', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({email,password}) });
+      const d = await r.json().catch(()=>null);
+      if(!r.ok || !d || d.error){ err.textContent = (d&&d.error)||'Could not log in. Check your email and password.'; err.hidden = false; return; }
+      stashResume();
+      location.reload();
+    }catch(e){ err.textContent = 'Network error. Try again.'; err.hidden = false; }
+    finally{ if($('authSubmit')) $('authSubmit').disabled = false; }
+  }
+  async function initAccountUI(){
+    const btn = $('btnAccount'); if(!btn) return;
+    btn.addEventListener('click', ()=>{ openAuthModal(authUser ? 'account' : 'login'); });
+    $('authClose').addEventListener('click', closeAuthModal);
+    $('authModal').addEventListener('click', (e)=>{ if(e.target.id==='authModal') closeAuthModal(); });
+    $('authSubmit').addEventListener('click', submitAuthForm);
+    $('authSwitch').addEventListener('click', ()=>{ openAuthModal(authModalMode==='signup' ? 'login' : 'signup'); });
+    await checkAuth();
+    await resumeAfterReload();
+  }
+  // the login gate for Five-Star / Hot Seat: only enforced once we've confirmed the auth functions are live
+  async function requireLogin(mode){
+    await checkAuth();
+    if(!backendHasAuth() || authUser) return true;
+    pendingCareerMode = mode;
+    openAuthModal('login');
+    return false;
+  }
+
+  // ---------- career leaderboard (optional infrastructure, same graceful-degrade shape) ----------
+  // Named tradeoff, matching the daily board: one composite "career score" per mode, an account's single
+  // best finish kept, no replay validation. See ANALYSIS.md.
+  function careerScore(mode, s){
+    if(mode==='player'){
+      return (s.totalW||0)*2 - (s.totalL||0) + (s.heisman?150:0) + (s.heisFinalist&&!s.heisman?40:0)
+        + (s.aa||0)*30 + (s.champs||0)*100 + (s.confTitles||0)*25
+        + (s.draftRound===1?60 : s.draftRound>1?Math.max(0,40-s.draftRound*3) : 0);
+    }
+    return (s.totalW||0)*2 - (s.totalL||0) + (s.champs||0)*120 + (s.confTitles||0)*25 + (s.cfpApps||0)*15 + (s.hof?100:0) - (s.fired?40:0);
+  }
+  function renderCareerLeaderboardList(entries, youRank){
+    if(!entries || !entries.length) return '<p class="wk-hint">No finishes posted yet — be the first.</p>';
+    return '<ol class="lb-list">' + entries.slice(0,10).map((e,i)=>
+      `<li class="${youRank===i+1?'me':''}"><span class="lb-rank">${i+1}</span><span class="lb-name">${escLb(e.name)}</span><span class="lb-meta">${escLb(e.record||'')}${e.detail?' · '+escLb(e.detail):''}</span><span class="lb-score">${e.score}</span></li>`
+    ).join('') + '</ol>';
+  }
+  async function submitCareerResult(mode, score, headline, record, detail){
+    try{
+      const r = await fetch('/api/submit-career', {
+        method:'POST', headers:{'content-type':'application/json'},
+        body: JSON.stringify({ mode, score, headline, record, detail }),
+      });
+      return r.ok ? await r.json() : null;
+    }catch(e){ return null; }
+  }
+  async function fetchCareerLeaderboard(mode){
+    try{
+      const r = await fetch('/api/career-leaderboard?mode='+encodeURIComponent(mode));
+      return r.ok ? await r.json() : null;
+    }catch(e){ return null; }
+  }
+  async function showCareerLeaderboard(mode, score, headline, record, detail){
+    const box = $('legLbBox'); if(!box) return;
+    box.hidden = true;
+    await checkAuth();
+    if(!authUser) return;   // no account signed in -- nothing to auto-attribute the finish to, stay quiet
+    const sub = await submitCareerResult(mode, score, headline, record, detail);
+    if(!sub) return;        // no backend on this host -- fail quiet, same as the daily leaderboard
+    const board = await fetchCareerLeaderboard(mode);
+    box.hidden = false;
+    box.innerHTML = '<p class="tape">All-time '+(mode==='player'?'Five-Star':'Hot Seat')+' leaderboard</p>'+
+      '<p class="wk-hint">Your best finish ranks #'+(sub.rank||'?')+' of '+sub.total+'.</p>'+
+      renderCareerLeaderboardList(board ? board.entries : null, sub.rank);
+  }
+
   // ---------- the hub card ----------
   function renderDailyCard(){
     if(!$('dailyTitle')) return;
@@ -4098,7 +4340,7 @@
       <p class="odds-foot">Projected ${o.def?'points allowed':'score'}: <b>${o.avg.toFixed(1)}</b> · a better build means better odds — re-draft attributes to move this.</p>`;
   }
 
-  window.__GG = Object.assign(window.__GG||{}, {TUNE,state,TEAMS,POSITIONS,estimateOdds,simGamePure,buildQ,newDrive,stepDrive,resolvePlay,involvement,playCaption,resetBox,creditPlay,styleFit,buildLean,scoutRead,hashLean,fitNote,seedRng,unseedRng,readDaily,nextStreak,liveStreak,recordDailyResult,dayKey,yesterdayKey,DAILY_KEY,draftAttribute,resetDraft,PREMIUM_CAP,PREMIUM_LIMIT,leaderboardName,setLeaderboardName,renderLeaderboardList,showDailyLeaderboard});
+  window.__GG = Object.assign(window.__GG||{}, {TUNE,state,TEAMS,POSITIONS,estimateOdds,simGamePure,buildQ,newDrive,stepDrive,resolvePlay,involvement,playCaption,resetBox,creditPlay,styleFit,buildLean,scoutRead,hashLean,fitNote,seedRng,unseedRng,readDaily,nextStreak,liveStreak,recordDailyResult,dayKey,yesterdayKey,DAILY_KEY,draftAttribute,resetDraft,PREMIUM_CAP,PREMIUM_LIMIT,leaderboardName,setLeaderboardName,renderLeaderboardList,showDailyLeaderboard,careerScore,renderCareerLeaderboardList});
 
   // ============================================================
   // CAREER ENGINE — shared by Five-Star (player) and Hot Seat (coach)
@@ -4761,6 +5003,63 @@
           O('Go, with the cameras','Let the story out', { risky:true, land:0.75, good:{conf:0,resp:0,fans:5}, bad:{conf:0,resp:-2,fans:-2}, quote:'"Come on in, everybody. Let\'s make some noise for these kids."' })
         ] };
     } },
+    { id:'hometown', modes:['player'], when:'post', w:2, ok:()=>true, build(ctx){
+      return { tag:'Hometown news', speaker:CAST.reporter, ask:`The paper back in {home} wants a quote for a feature on the local kid playing big-time football.`,
+        opts:[
+          O('Keep it humble','Talk about the people back home', { good:{conf:0,resp:3,fans:2}, quote:'"None of this happens without {home}. I carry it with me out there."' }),
+          O('Talk your goals','Say what you\'re chasing', { risky:true, land:0.55, good:{conf:3,resp:0,fans:4}, bad:{conf:-2,resp:-2,fans:-1}, quote:'"I didn\'t come this far to stop here. {home} is going to see my name in lights."' })
+        ] };
+    } },
+    { id:'brand', modes:['player'], when:'post', w:2, ok:()=>C.meters.fans>=55 && C.meters.fans<90, build(ctx){
+      return { tag:'Agent call', speaker:{name:'Marcy Bell',role:'Your agent',outlet:''}, ask:`A shoe brand wants to fly you out for a full campaign shoot — a real jump from local deals.`,
+        opts:[
+          O('Take the deal','Sign now', { good:{conf:1,resp:-1,fans:6}, quote:'"Let\'s do it. Book the flight."' }),
+          O('Let your agent negotiate','Patience pays', { good:{conf:1,resp:1,fans:2}, quote:'"Get me the best version of this. I can wait a week."' }),
+          O('Pass — stay off the radar','Keep the season simple', { good:{conf:0,resp:3,fans:-1}, quote:'"Not this season. I want the noise to be about the games."' })
+        ] };
+    } },
+    { id:'classroom', private:true, modes:['player'], when:'pre', w:1.5, ok:()=>C.pl.cls>=1, build(ctx){
+      return { tag:'Academic office', speaker:{name:'Ms. Okafor',role:'Academic advisor',outlet:C.school.place}, ask:`A midterm landed the same week as {opp}, and your advisor wants to talk about the study plan before it becomes a problem.`,
+        opts:[
+          O('Make the plan','Lock in study hall time', { good:{conf:0,resp:3,fans:0}, quote:'"Set the hours. I\'ll be there."' }),
+          O('Say you\'ve got it','Handle it your own way', { risky:true, land:0.55, good:{conf:2,resp:1,fans:0}, bad:{conf:-2,resp:-3,fans:0}, mod:{q:-1}, badMod:{q:-2}, quote:'"I\'ve got a system, Ms. Okafor. Trust me on this one."' })
+        ] };
+    } },
+    { id:'podcast', modes:['player'], when:'post', w:2, ok:()=>C.pl.cls>=1, build(ctx){
+      return { tag:'Podcast booth', speaker:CAST.analyst, ask:`A national college football podcast wants you on for twenty minutes, live, no editing.`,
+        opts:[
+          O('Play it safe','Stick to coach-speak', { good:{conf:0,resp:2,fans:1}, quote:'"We\'re taking it one week at a time. That\'s really it."' }),
+          O('Say something real','Give them a real opinion', { risky:true, land:0.5, good:{conf:3,resp:-1,fans:6}, bad:{conf:-2,resp:-4,fans:-2}, quote:'"Honestly? {rival} is beatable this year, and everyone in that building knows it."' })
+        ] };
+    } },
+    { id:'oldcoach', private:true, modes:['player'], when:'pre', w:2, ok:(c)=>c.big, build(ctx){
+      return { tag:'Old phone number', speaker:{name:'Coach Devereux',role:'Your high school coach',outlet:''}, ask:`A text from the coach who first believed in you, the night before {oppn}: "Proud of you either way. Go play free."`,
+        opts:[
+          O('Call him back','Take five minutes', { good:{conf:2,resp:2,fans:0}, quote:'"Means a lot, Coach. I won\'t waste it."' }),
+          O('Read it and refocus','Save it for later', { good:{conf:1,resp:1,fans:0}, quote:'(You read it twice, then put the phone away.)' })
+        ] };
+    } },
+    { id:'familyvisit', private:true, modes:['player'], when:'pre', w:2, ok:(c)=>c.big, build(ctx){
+      return { tag:'Family in town', speaker:CAST.reporter, ask:`Your whole family made the trip in for {oppn}. Tickets, hotel rooms, the works — and they want time with you before the game.`,
+        opts:[
+          O('Make time for them','Dinner, then focus', { good:{conf:2,resp:1,fans:0}, quote:'"An hour with them, then I lock in. That\'s the trade."' }),
+          O('Stay locked in','Football first, visit after', { good:{conf:1,resp:2,fans:0}, mod:{q:1}, quote:'"They get it. We celebrate after the win."' })
+        ] };
+    } },
+    { id:'draftbuzz', modes:['player'], when:'post', w:2, ok:()=>C.pl.cls>=2, build(ctx){
+      return { tag:'Draft boards', speaker:CAST.analyst, ask:`A national draft analyst put out an early mock with your name in the first two rounds. It's everywhere by lunchtime.`,
+        opts:[
+          O('Downplay it','Keep the focus on the team', { good:{conf:0,resp:2,fans:1}, quote:'"Flattering, but I\'m not thinking about that right now."' }),
+          O('Own the moment','Let it fuel you', { risky:true, land:0.55, good:{conf:3,resp:-1,fans:4}, bad:{conf:-2,resp:-3,fans:-1}, quote:'"I see it. Now I have to go prove it every week."' })
+        ] };
+    } },
+    { id:'roommate', private:true, modes:['player'], when:'pre', w:2, ok:()=>C.pl.cls>=1, build(ctx){
+      return { tag:'Off campus', speaker:CAST.reporter, ask:`Your roommate and fellow starter is dealing with a rough week at home, and it's showing up in practice ahead of {opp}.`,
+        opts:[
+          O('Be there for him','Check in, no pressure', { good:{conf:1,resp:3,fans:0}, quote:'"Whatever you need, man. Football can wait a minute."' }),
+          O('Get him back on schedule','Structure helps', { good:{conf:1,resp:2,fans:0}, mod:{q:1}, quote:'"Practice, film, sleep. Let\'s just get through the routine together."' })
+        ] };
+    } },
 
     // ---------- coach events ----------
     { id:'booster', private:true, modes:['coach'], when:'pre', w:3, ok:()=>C.season.idx>=2 && C.meters.resp<75, build(ctx){
@@ -4814,6 +5113,55 @@
         opts:[
           O('Drive to his house','Make the personal visit', { good:{conf:0,resp:1,fans:1}, prog:{class:1}, quote:'"I\'m in the driveway. Can I come in?"' }),
           O('Promise early playing time','Guarantee snaps', { risky:true, land:0.5, good:{conf:0,resp:0,fans:3}, bad:{conf:-3,resp:-1,fans:0}, prog:{class:2}, badProg:{class:0}, quote:'"He\'ll be on the field as a freshman. You have my word."' })
+        ] };
+    } },
+    { id:'donor', private:true, modes:['coach'], when:'pre', w:2.5, ok:()=>C.season.idx>=1, build(ctx){
+      return { tag:'Donor call', speaker:{name:'Walt Pruitt',role:'Booster club chair',outlet:C.school.place}, ask:`Your single biggest donor calls personally with "a suggestion" about who should be starting ahead of {oppn}.`,
+        opts:[
+          O('Hear him out, decide yourself','Stay polite, stay in charge', { good:{conf:1,resp:3,fans:0}, quote:'"I appreciate the call. The depth chart is mine to set."' }),
+          O('Shut it down','Draw the line now', { risky:true, land:0.5, good:{conf:3,resp:1,fans:0}, bad:{conf:-1,resp:-4,fans:0}, quote:'"With respect, that\'s not how this program runs. Ever."' })
+        ] };
+    } },
+    { id:'assistantpoach', modes:['coach'], when:'post', w:2, ok:()=>C.season.idx>=2, build(ctx){
+      return { tag:'Staff room', speaker:CAST.beat, ask:`{rival} just offered your recruiting coordinator more money and a bigger title. He hasn't said no.`,
+        opts:[
+          O('Counter the offer','Keep him in the building', { risky:true, land:0.55, good:{conf:1,resp:2,fans:0}, bad:{conf:-2,resp:-3,fans:0}, quote:'"We\'ll match it and then some. You\'re part of what we\'re building."' }),
+          O('Let him go','Wish him well', { good:{conf:0,resp:1,fans:0}, quote:'"No hard feelings. Go get that title."' })
+        ] };
+    } },
+    { id:'mediaday', modes:['coach'], when:'pre', w:3, ok:(c)=>c.big, build(ctx){
+      return { tag:'Media day', speaker:CAST.anchor, ask:`Every camera in the conference is on the podium ahead of {oppn}. National TV wants a soundbite.`,
+        opts:[
+          O('Stay measured','Respect the opponent', { good:{conf:0,resp:2,fans:0}, quote:'"They\'re well-coached and we\'re not taking anything for granted."' }),
+          O('Make a prediction','Give them the headline', { risky:true, land:0.5, good:{conf:3,resp:0,fans:6}, bad:{conf:-2,resp:-4,fans:-2}, quote:'"We didn\'t come here to keep it close. We came here to win it."' })
+        ] };
+    } },
+    { id:'walkonstory', modes:['coach'], when:'post', w:2, ok:()=>true, build(ctx){
+      return { tag:'Community', speaker:CAST.reporter, ask:`A walk-on who made the two-deep the hard way has a story the local news wants to tell — practice-squad grinder to real contributor.`,
+        opts:[
+          O('Put him in front of the cameras','Let the story breathe', { good:{conf:0,resp:1,fans:4}, quote:'"Go tell it. He\'s earned every word of it."' }),
+          O('Keep it low-key','Team over individual stories', { good:{conf:1,resp:2,fans:0}, quote:'"We appreciate it, but we\'d rather talk about the team."' })
+        ] };
+    } },
+    { id:'playcalling', modes:['coach'], when:'post', w:2.5, ok:()=>C.season.streak<0, build(ctx){
+      return { tag:'Talk radio', speaker:CAST.analyst, ask:`The fan base is loud about the play-calling after that one. Every call-in show wants to relitigate the fourth quarter.`,
+        opts:[
+          O('Defend the staff','Back your coordinators publicly', { good:{conf:1,resp:2,fans:-1}, quote:'"We call what we practice. That\'s not changing because of one bad week."' }),
+          O('Admit it needs work','Give the fans something honest', { risky:true, land:0.55, good:{conf:0,resp:3,fans:3}, bad:{conf:-2,resp:-2,fans:-2}, quote:'"We didn\'t put our guys in the best spots. That\'s on the staff, and we\'ll fix it."' })
+        ] };
+    } },
+    { id:'campusvisit', modes:['coach'], when:'pre', w:2, ok:()=>true, build(ctx){
+      return { tag:'Recruiting', speaker:CAST.analyst, ask:`A top target is on an official visit this weekend, timed for {oppn}. His whole family is in the stands.`,
+        opts:[
+          O('Give him the full experience','Personal attention all weekend', { good:{conf:0,resp:1,fans:1}, prog:{class:1}, quote:'"He\'s not just a visitor. He\'s family this weekend."' }),
+          O('Let the game speak for itself','No extra show', { good:{conf:1,resp:1,fans:0}, quote:'"We don\'t recruit with smoke and mirrors. We recruit with what happens on the field."' })
+        ] };
+    } },
+    { id:'alumnigame', private:true, modes:['coach'], when:'pre', w:2, ok:()=>C.season.idx>=1, build(ctx){
+      return { tag:'Alumni weekend', speaker:CAST.beat, ask:`Alumni weekend lands the same week as {oppn}. Former players want time with the current team.`,
+        opts:[
+          O('Open the building to them','Let the history in', { good:{conf:1,resp:2,fans:2}, quote:'"Come see what you built. The door\'s open."' }),
+          O('Keep the week normal','Protect the routine', { good:{conf:0,resp:1,fans:0}, quote:'"We love our alumni. This week, we need to be a football team first."' })
         ] };
     } }
   ];
@@ -5583,6 +5931,53 @@
     return false;
   }
 
+  // ---------- coach offseason: recruiting + staff flavor pools ----------
+  // Text-only variety -- the ratings math below is untouched and still what's tuned/tested. Only which recruit
+  // is on the board, how the signing lands, and which staff spot opens up change from year to year now.
+  const RECRUIT_TARGETS = [
+    { label:'a five-star quarterback', short:'the quarterback' },
+    { label:'a five-star edge rusher', short:'the pass rusher' },
+    { label:'a five-star receiver', short:'the receiver' },
+    { label:'a five-star left tackle', short:'the tackle' },
+    { label:'a five-star cornerback', short:'the corner' },
+    { label:'a five-star running back', short:'the running back' },
+    { label:'a five-star linebacker', short:'the linebacker' },
+  ];
+  const RECRUIT_WIN_TXT = [
+    (short, place)=>`The signing is official: ${short} picks ${place}. The whole class follows.`,
+    short=>`It's a live broadcast commitment — ${short} signs on national signing day.`,
+    short=>`The staff lands ${short} in the eleventh hour, and the class jumps in the rankings.`,
+  ];
+  const RECRUIT_LOSE_TXT = [
+    short=>`Bad news off the board: ${short} goes elsewhere. The class is thin.`,
+    short=>`It's official — ${short} picks a rival on signing day. The board scrambles for a plan B.`,
+    short=>`The staff loses ${short} at the wire, and the phones do not stop ringing.`,
+  ];
+  const RECRUIT_DEPTH_TXT = [
+    'A steady, deep class. Nothing flashy, everything usable.',
+    'Twenty-two signatures, not a headline among them, and a two-deep that actually holds up.',
+    'The class grades out average on the recruiting sites and well ahead of it on the practice field.',
+  ];
+  const RECRUIT_PORTAL_TXT = [
+    'Portal money buys instant help.',
+    'Three portal transfers sign in a week. The roster looks different by August.',
+    'The transfer haul plugs the two biggest holes on the depth chart overnight.',
+  ];
+  const STAFF_HIRE_EVENTS = [
+    { tag:'Staff room', speaker:CAST.beat, ask:`An NFL team wants your offensive coordinator. Promote from within, or go big on a name hire?`,
+      opts:[ O('Promote from within','Keep continuity',{ good:{conf:1,resp:1,fans:0}, quote:'"He knows our guys. Nothing changes."' }),
+             O('Hire a big name','Make a splash',{ risky:true, land:0.55, good:{conf:3,resp:1,fans:4}, bad:{conf:-2,resp:-3,fans:-1}, quote:'"We got the best coordinator available. Watch what he does with this group."' }) ] },
+    { tag:'Staff room', speaker:CAST.beat, ask:`Your defensive coordinator just interviewed for a head coaching job across the conference. Match his ask, or let him walk and promote the linebackers coach?`,
+      opts:[ O('Match the ask','Pay to keep continuity',{ good:{conf:0,resp:2,fans:0}, quote:'"We take care of our own. He\'s staying."' }),
+             O('Let him walk','Promote from the room',{ risky:true, land:0.5, good:{conf:2,resp:2,fans:1}, bad:{conf:-2,resp:-4,fans:0}, quote:'"New voice, same standard. We\'re not slowing down."' }) ] },
+    { tag:'Staff room', speaker:{name:'Marlene Osei',role:'Athletic director',outlet:'Athletics'}, ask:`The strength staff is asking for a real budget bump — new equipment, another assistant, the works. Fund it, or hold the line?`,
+      opts:[ O('Fund it','Invest in the room',{ risky:true, land:0.55, good:{conf:3,resp:0,fans:0}, bad:{conf:-1,resp:-3,fans:0}, quote:'"If we want to hold up in November, we pay for it in June."' }),
+             O('Hold the line','Not this year',{ good:{conf:0,resp:1,fans:0}, quote:'"We make do with what we\'ve got. Same as always."' }) ] },
+    { tag:'Staff room', speaker:CAST.analyst, ask:`A hotshot young recruiter from a rival staff is available, and the price is steep for a first-time coordinator hire. Take the swing, or stay the course?`,
+      opts:[ O('Take the swing','Bet on the young hire',{ risky:true, land:0.5, good:{conf:2,resp:0,fans:2}, bad:{conf:-2,resp:-2,fans:-1}, quote:'"He\'s hungry, and hungry wins recruiting battles."' }),
+             O('Stay the course','Trust the current staff',{ good:{conf:0,resp:1,fans:0}, quote:'"We\'re not chasing every name on the market. We trust our people."' }) ] },
+  ];
+
   // ---------- coach offseason ----------
   async function coachOffseason(){
     const s = C.season, co = C.co;
@@ -5613,17 +6008,18 @@
     await filmRoom();
     // recruiting
     const rec = co.attrs.REC;
+    const target = U.pick(RECRUIT_TARGETS);
     const i = await stagePick(`<div class="scene"><p class="tape scene-tag">Recruiting</p>
       <div class="speaker"><b>${CAST.analyst.name}</b><span>${CAST.analyst.role} · ${CAST.analyst.outlet}</span></div>
-      <p class="scene-line">Signing class is on the board. Recruiting rating: <b>${rec}</b>. How do you build it?</p></div>`, [
-      { label:'Chase the five-star', sub:'Swing for a program-changing name', risky:true },
+      <p class="scene-line">Signing class is on the board — ${target.label} headlines it. Recruiting rating: <b>${rec}</b>. How do you build it?</p></div>`, [
+      { label:'Chase '+target.short, sub:'Swing for a program-changing name', risky:true },
       { label:'Sign the depth', sub:'A safe class of high-floor guys' },
       { label:'Splash in the portal', sub:'Buy help now — the locker room may grumble' }
     ]);
     let dRating = (rec-60)*0.10 + U.gauss()*1.0 + (co.class||0)*0.6 + (bgOf()==='recruiter' ? 0.6 : 0), txt = '', dm = {};
-    if(i===0){ const ok = U.chance(U.clamp(0.35+(rec-60)*0.008+(C.meters.fans-50)*0.003,0.2,0.75)); dRating += ok?4:-0.5; txt = ok?'The five-star signs. The whole class follows.':'The five-star goes elsewhere. The class is thin.'; dm = ok?{fans:5,conf:2}:{fans:-3,conf:-2}; }
-    else if(i===1){ dRating += 1.6; txt = 'A steady, deep class. Nothing flashy, everything usable.'; dm = {conf:1}; }
-    else { dRating += 3; txt = 'Portal money buys instant help.'; dm = {fans:3,conf:-2,resp:1}; }
+    if(i===0){ const ok = U.chance(U.clamp(0.35+(rec-60)*0.008+(C.meters.fans-50)*0.003,0.2,0.75)); dRating += ok?4:-0.5; txt = ok?U.pick(RECRUIT_WIN_TXT)(target.short, C.school.place):U.pick(RECRUIT_LOSE_TXT)(target.short); dm = ok?{fans:5,conf:2}:{fans:-3,conf:-2}; }
+    else if(i===1){ dRating += 1.6; txt = U.pick(RECRUIT_DEPTH_TXT); dm = {conf:1}; }
+    else { dRating += 3; txt = U.pick(RECRUIT_PORTAL_TXT); dm = {fans:3,conf:-2,resp:1}; }
     co.class = 0;
     const cls = C.school;
     cls.off = U.clamp(Math.round(cls.off + dRating*0.35), 50, 92); cls.def = U.clamp(Math.round(cls.def + dRating*0.35), 45, 92); cls.rating = Math.round((cls.off+cls.def)/2);
@@ -5631,10 +6027,7 @@
     await stageAsk(`<div class="scene"><p class="tape scene-tag">Signing day</p><p class="scene-line">${txt}</p><p class="wk-rec">Program rating now ${cls.rating}</p>${deltaPlates(d)}</div>`, [{id:'c',label:'Next season ▸'}]);
     // staff
     if(U.chance(0.3)){
-      const ev = { build:()=>({ tag:'Staff room', speaker:CAST.beat, ask:`An NFL team wants your offensive coordinator. Promote from within, or go big on a name hire?`,
-        opts:[ O('Promote from within','Keep continuity',{ good:{conf:1,resp:1,fans:0}, quote:'"He knows our guys. Nothing changes."' }),
-               O('Hire a big name','Make a splash',{ risky:true, land:0.55, good:{conf:3,resp:1,fans:4}, bad:{conf:-2,resp:-3,fans:-1}, quote:'"We got the best coordinator available. Watch what he does with this group."' }) ] }) };
-      await doEvent(ev, { g:{kind:'reg'}, opp:null });
+      await doEvent({ build:()=>U.pick(STAFF_HIRE_EVENTS) }, { g:{kind:'reg'}, opp:null });
     }
     // program drift with coach development
     programDrift(); const dev = (co.attrs.DEV-72)*0.03;
@@ -5789,6 +6182,8 @@
     careerTable(C.hist.map(h=>[`Yr ${h.yr}${h.champ?' ★':''}${h.redshirt?' (RS)':''}`, h.school.split(' ')[0]+' · '+h.post, h.w+'–'+h.l+((h.pw||h.pl)?' (+'+h.pw+'–'+h.pl+')':'')]));
     $('legShareBox').textContent = 'FIVE-STAR — '+C.name+' · '+POSITIONS[C.pl.pos].label+'\n'+totalW+'–'+totalL+' across '+C.hist.length+' seasons · OVR '+Math.round(attrAvg())+'\n'+(heis?'Heisman winner · ':'')+(C.champs?C.champs+'× national champion · ':'')+(slot.round===0?'Undrafted':'Round '+slot.round+(slot.round===1?', pick '+slot.pick:''))+'\nConfidence '+C.meters.conf+' · Respect '+C.meters.resp+' · '+U.fans(fanCount())+' fans';
     $('legCopyStatus').textContent = '';
+    const pScore = careerScore('player', { totalW, totalL, heisman:heis, heisFinalist:fin, aa, champs:C.champs, confTitles:C.confTitles, draftRound:slot.round });
+    showCareerLeaderboard('player', pScore, heis?'Heisman winner':fin?'Heisman finalist':(slot.round===0?'Undrafted':'Round '+slot.round+' pick'), totalW+'–'+totalL, POSITIONS[C.pl.pos].label+' · '+C.school.name);
     resetTeamAccent(); showScreen('screen-legacy-results');
   }
   function finishCoachDynasty(){
@@ -5814,6 +6209,8 @@
     careerTable(C.hist.map(h=>[`Yr ${h.yr}${h.champ?' ★':''}`, h.post, h.w+'–'+h.l+((h.pw||h.pl)?' (+'+h.pw+'–'+h.pl+')':'')]));
     $('legShareBox').textContent = 'HOT SEAT — '+C.name+' · '+C.school.name+'\n'+totalW+'–'+totalL+' across '+C.hist.length+' seasons · '+C.champs+' national title(s)'+(hof?' · HALL OF FAME':'')+(C.fired?' · fired':'')+'\nTeam belief '+C.meters.conf+' · Job security '+C.meters.resp+' · '+U.fans(fanCount())+' fans';
     $('legCopyStatus').textContent = '';
+    const cScore = careerScore('coach', { totalW, totalL, champs:C.champs, confTitles:C.confTitles, cfpApps:C.cfpApps, hof, fired:C.fired });
+    showCareerLeaderboard('coach', cScore, hof?'Hall of Fame':C.champs?C.champs+'x champion':C.fired?'Fired':'Dynasty built', totalW+'–'+totalL, C.school.name);
     resetTeamAccent(); showScreen('screen-legacy-results');
   }
 
@@ -5833,7 +6230,8 @@
   function startPlayerCareer(){ return beginCareer('player'); }
   function startCoachDynasty(){ return beginCareer('coach'); }
 
-  function showLegacyIntro(mode){
+  async function showLegacyIntro(mode){
+    if(!(await requireLogin(mode))) return;
     resetTeamAccent();
     state.pendingLegacyMode = mode;
     $('legPosGroup').style.display = mode==='player' ? 'block' : 'none';
@@ -5974,6 +6372,7 @@
   function init(){
     $('todayDate').textContent = fmtDate();
     syncDay(true);
+    initAccountUI();
 
     $('btnGoDaily').addEventListener('click', ()=>{ showScreen('screen-intro'); });
     $('btnGoPlayer').addEventListener('click', ()=>{ showLegacyIntro('player'); });

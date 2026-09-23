@@ -159,6 +159,20 @@
     return { pass: ok, detail: 'name persists trimmed ("Ryan"); a hostile name is HTML-escaped, rank 1 is not marked "me", rank 2 ("Sam") is; an empty board says to be the first' };
   });
 
+  // ---- all-time career leaderboard: the score formula rewards the right things, and the list renders safely ----
+  check('Career score: a Heisman-winning, national-title season clearly outranks a plain winning one', ()=>{
+    const great = G.careerScore('player', { totalW:12, totalL:1, heisman:true, aa:1, champs:1, confTitles:1, draftRound:1 });
+    const good = G.careerScore('player', { totalW:9, totalL:4, draftRound:4 });
+    const coachHof = G.careerScore('coach', { totalW:90, totalL:20, champs:2, confTitles:3, cfpApps:5, hof:true });
+    const coachFired = G.careerScore('coach', { totalW:14, totalL:30, fired:true });
+    const html = G.renderCareerLeaderboardList([{name:'<b>x</b>',score:400,record:'12-1',detail:'QB · Ohio State'},{name:'Sam',score:200,record:'9-4'}], 2);
+    const items = html.split('</li>');
+    const escaped = items[0].includes('&lt;b&gt;') && !items[0].includes('<b>x</b>');
+    const secondIsMe = /class="me"/.test(items[1]) && items[1].includes('Sam');
+    const ok = great>good && coachHof>coachFired && escaped && secondIsMe;
+    return { pass: ok, detail: 'Heisman/title season ('+great+') beats a plain one ('+good+'); a Hall of Fame dynasty ('+coachHof+') beats a fired one ('+coachFired+'); the rendered list escapes hostile names and marks the right row "me"' };
+  });
+
   // ---- real teams: the opponents are real programs, no leftover fictional ones ----
   check('The 28-team league and the daily opponents are all distinct real programs', ()=>{
     S.draftMode='player'; S.position='QB'; S.slots=uni(ATTRS.QB,80);

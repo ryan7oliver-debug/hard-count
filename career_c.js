@@ -116,6 +116,63 @@
           O('Go, with the cameras','Let the story out', { risky:true, land:0.75, good:{conf:0,resp:0,fans:5}, bad:{conf:0,resp:-2,fans:-2}, quote:'"Come on in, everybody. Let\'s make some noise for these kids."' })
         ] };
     } },
+    { id:'hometown', modes:['player'], when:'post', w:2, ok:()=>true, build(ctx){
+      return { tag:'Hometown news', speaker:CAST.reporter, ask:`The paper back in {home} wants a quote for a feature on the local kid playing big-time football.`,
+        opts:[
+          O('Keep it humble','Talk about the people back home', { good:{conf:0,resp:3,fans:2}, quote:'"None of this happens without {home}. I carry it with me out there."' }),
+          O('Talk your goals','Say what you\'re chasing', { risky:true, land:0.55, good:{conf:3,resp:0,fans:4}, bad:{conf:-2,resp:-2,fans:-1}, quote:'"I didn\'t come this far to stop here. {home} is going to see my name in lights."' })
+        ] };
+    } },
+    { id:'brand', modes:['player'], when:'post', w:2, ok:()=>C.meters.fans>=55 && C.meters.fans<90, build(ctx){
+      return { tag:'Agent call', speaker:{name:'Marcy Bell',role:'Your agent',outlet:''}, ask:`A shoe brand wants to fly you out for a full campaign shoot — a real jump from local deals.`,
+        opts:[
+          O('Take the deal','Sign now', { good:{conf:1,resp:-1,fans:6}, quote:'"Let\'s do it. Book the flight."' }),
+          O('Let your agent negotiate','Patience pays', { good:{conf:1,resp:1,fans:2}, quote:'"Get me the best version of this. I can wait a week."' }),
+          O('Pass — stay off the radar','Keep the season simple', { good:{conf:0,resp:3,fans:-1}, quote:'"Not this season. I want the noise to be about the games."' })
+        ] };
+    } },
+    { id:'classroom', private:true, modes:['player'], when:'pre', w:1.5, ok:()=>C.pl.cls>=1, build(ctx){
+      return { tag:'Academic office', speaker:{name:'Ms. Okafor',role:'Academic advisor',outlet:C.school.place}, ask:`A midterm landed the same week as {opp}, and your advisor wants to talk about the study plan before it becomes a problem.`,
+        opts:[
+          O('Make the plan','Lock in study hall time', { good:{conf:0,resp:3,fans:0}, quote:'"Set the hours. I\'ll be there."' }),
+          O('Say you\'ve got it','Handle it your own way', { risky:true, land:0.55, good:{conf:2,resp:1,fans:0}, bad:{conf:-2,resp:-3,fans:0}, mod:{q:-1}, badMod:{q:-2}, quote:'"I\'ve got a system, Ms. Okafor. Trust me on this one."' })
+        ] };
+    } },
+    { id:'podcast', modes:['player'], when:'post', w:2, ok:()=>C.pl.cls>=1, build(ctx){
+      return { tag:'Podcast booth', speaker:CAST.analyst, ask:`A national college football podcast wants you on for twenty minutes, live, no editing.`,
+        opts:[
+          O('Play it safe','Stick to coach-speak', { good:{conf:0,resp:2,fans:1}, quote:'"We\'re taking it one week at a time. That\'s really it."' }),
+          O('Say something real','Give them a real opinion', { risky:true, land:0.5, good:{conf:3,resp:-1,fans:6}, bad:{conf:-2,resp:-4,fans:-2}, quote:'"Honestly? {rival} is beatable this year, and everyone in that building knows it."' })
+        ] };
+    } },
+    { id:'oldcoach', private:true, modes:['player'], when:'pre', w:2, ok:(c)=>c.big, build(ctx){
+      return { tag:'Old phone number', speaker:{name:'Coach Devereux',role:'Your high school coach',outlet:''}, ask:`A text from the coach who first believed in you, the night before {oppn}: "Proud of you either way. Go play free."`,
+        opts:[
+          O('Call him back','Take five minutes', { good:{conf:2,resp:2,fans:0}, quote:'"Means a lot, Coach. I won\'t waste it."' }),
+          O('Read it and refocus','Save it for later', { good:{conf:1,resp:1,fans:0}, quote:'(You read it twice, then put the phone away.)' })
+        ] };
+    } },
+    { id:'familyvisit', private:true, modes:['player'], when:'pre', w:2, ok:(c)=>c.big, build(ctx){
+      return { tag:'Family in town', speaker:CAST.reporter, ask:`Your whole family made the trip in for {oppn}. Tickets, hotel rooms, the works — and they want time with you before the game.`,
+        opts:[
+          O('Make time for them','Dinner, then focus', { good:{conf:2,resp:1,fans:0}, quote:'"An hour with them, then I lock in. That\'s the trade."' }),
+          O('Stay locked in','Football first, visit after', { good:{conf:1,resp:2,fans:0}, mod:{q:1}, quote:'"They get it. We celebrate after the win."' })
+        ] };
+    } },
+    { id:'draftbuzz', modes:['player'], when:'post', w:2, ok:()=>C.pl.cls>=2, build(ctx){
+      return { tag:'Draft boards', speaker:CAST.analyst, ask:`A national draft analyst put out an early mock with your name in the first two rounds. It's everywhere by lunchtime.`,
+        opts:[
+          O('Downplay it','Keep the focus on the team', { good:{conf:0,resp:2,fans:1}, quote:'"Flattering, but I\'m not thinking about that right now."' }),
+          O('Own the moment','Let it fuel you', { risky:true, land:0.55, good:{conf:3,resp:-1,fans:4}, bad:{conf:-2,resp:-3,fans:-1}, quote:'"I see it. Now I have to go prove it every week."' })
+        ] };
+    } },
+    { id:'roommate', private:true, modes:['player'], when:'pre', w:2, ok:()=>C.pl.cls>=1, build(ctx){
+      return { tag:'Off campus', speaker:CAST.reporter, ask:`Your roommate and fellow starter is dealing with a rough week at home, and it's showing up in practice ahead of {opp}.`,
+        opts:[
+          O('Be there for him','Check in, no pressure', { good:{conf:1,resp:3,fans:0}, quote:'"Whatever you need, man. Football can wait a minute."' }),
+          O('Get him back on schedule','Structure helps', { good:{conf:1,resp:2,fans:0}, mod:{q:1}, quote:'"Practice, film, sleep. Let\'s just get through the routine together."' })
+        ] };
+    } },
 
     // ---------- coach events ----------
     { id:'booster', private:true, modes:['coach'], when:'pre', w:3, ok:()=>C.season.idx>=2 && C.meters.resp<75, build(ctx){
@@ -169,6 +226,55 @@
         opts:[
           O('Drive to his house','Make the personal visit', { good:{conf:0,resp:1,fans:1}, prog:{class:1}, quote:'"I\'m in the driveway. Can I come in?"' }),
           O('Promise early playing time','Guarantee snaps', { risky:true, land:0.5, good:{conf:0,resp:0,fans:3}, bad:{conf:-3,resp:-1,fans:0}, prog:{class:2}, badProg:{class:0}, quote:'"He\'ll be on the field as a freshman. You have my word."' })
+        ] };
+    } },
+    { id:'donor', private:true, modes:['coach'], when:'pre', w:2.5, ok:()=>C.season.idx>=1, build(ctx){
+      return { tag:'Donor call', speaker:{name:'Walt Pruitt',role:'Booster club chair',outlet:C.school.place}, ask:`Your single biggest donor calls personally with "a suggestion" about who should be starting ahead of {oppn}.`,
+        opts:[
+          O('Hear him out, decide yourself','Stay polite, stay in charge', { good:{conf:1,resp:3,fans:0}, quote:'"I appreciate the call. The depth chart is mine to set."' }),
+          O('Shut it down','Draw the line now', { risky:true, land:0.5, good:{conf:3,resp:1,fans:0}, bad:{conf:-1,resp:-4,fans:0}, quote:'"With respect, that\'s not how this program runs. Ever."' })
+        ] };
+    } },
+    { id:'assistantpoach', modes:['coach'], when:'post', w:2, ok:()=>C.season.idx>=2, build(ctx){
+      return { tag:'Staff room', speaker:CAST.beat, ask:`{rival} just offered your recruiting coordinator more money and a bigger title. He hasn't said no.`,
+        opts:[
+          O('Counter the offer','Keep him in the building', { risky:true, land:0.55, good:{conf:1,resp:2,fans:0}, bad:{conf:-2,resp:-3,fans:0}, quote:'"We\'ll match it and then some. You\'re part of what we\'re building."' }),
+          O('Let him go','Wish him well', { good:{conf:0,resp:1,fans:0}, quote:'"No hard feelings. Go get that title."' })
+        ] };
+    } },
+    { id:'mediaday', modes:['coach'], when:'pre', w:3, ok:(c)=>c.big, build(ctx){
+      return { tag:'Media day', speaker:CAST.anchor, ask:`Every camera in the conference is on the podium ahead of {oppn}. National TV wants a soundbite.`,
+        opts:[
+          O('Stay measured','Respect the opponent', { good:{conf:0,resp:2,fans:0}, quote:'"They\'re well-coached and we\'re not taking anything for granted."' }),
+          O('Make a prediction','Give them the headline', { risky:true, land:0.5, good:{conf:3,resp:0,fans:6}, bad:{conf:-2,resp:-4,fans:-2}, quote:'"We didn\'t come here to keep it close. We came here to win it."' })
+        ] };
+    } },
+    { id:'walkonstory', modes:['coach'], when:'post', w:2, ok:()=>true, build(ctx){
+      return { tag:'Community', speaker:CAST.reporter, ask:`A walk-on who made the two-deep the hard way has a story the local news wants to tell — practice-squad grinder to real contributor.`,
+        opts:[
+          O('Put him in front of the cameras','Let the story breathe', { good:{conf:0,resp:1,fans:4}, quote:'"Go tell it. He\'s earned every word of it."' }),
+          O('Keep it low-key','Team over individual stories', { good:{conf:1,resp:2,fans:0}, quote:'"We appreciate it, but we\'d rather talk about the team."' })
+        ] };
+    } },
+    { id:'playcalling', modes:['coach'], when:'post', w:2.5, ok:()=>C.season.streak<0, build(ctx){
+      return { tag:'Talk radio', speaker:CAST.analyst, ask:`The fan base is loud about the play-calling after that one. Every call-in show wants to relitigate the fourth quarter.`,
+        opts:[
+          O('Defend the staff','Back your coordinators publicly', { good:{conf:1,resp:2,fans:-1}, quote:'"We call what we practice. That\'s not changing because of one bad week."' }),
+          O('Admit it needs work','Give the fans something honest', { risky:true, land:0.55, good:{conf:0,resp:3,fans:3}, bad:{conf:-2,resp:-2,fans:-2}, quote:'"We didn\'t put our guys in the best spots. That\'s on the staff, and we\'ll fix it."' })
+        ] };
+    } },
+    { id:'campusvisit', modes:['coach'], when:'pre', w:2, ok:()=>true, build(ctx){
+      return { tag:'Recruiting', speaker:CAST.analyst, ask:`A top target is on an official visit this weekend, timed for {oppn}. His whole family is in the stands.`,
+        opts:[
+          O('Give him the full experience','Personal attention all weekend', { good:{conf:0,resp:1,fans:1}, prog:{class:1}, quote:'"He\'s not just a visitor. He\'s family this weekend."' }),
+          O('Let the game speak for itself','No extra show', { good:{conf:1,resp:1,fans:0}, quote:'"We don\'t recruit with smoke and mirrors. We recruit with what happens on the field."' })
+        ] };
+    } },
+    { id:'alumnigame', private:true, modes:['coach'], when:'pre', w:2, ok:()=>C.season.idx>=1, build(ctx){
+      return { tag:'Alumni weekend', speaker:CAST.beat, ask:`Alumni weekend lands the same week as {oppn}. Former players want time with the current team.`,
+        opts:[
+          O('Open the building to them','Let the history in', { good:{conf:1,resp:2,fans:2}, quote:'"Come see what you built. The door\'s open."' }),
+          O('Keep the week normal','Protect the routine', { good:{conf:0,resp:1,fans:0}, quote:'"We love our alumni. This week, we need to be a football team first."' })
         ] };
     } }
   ];

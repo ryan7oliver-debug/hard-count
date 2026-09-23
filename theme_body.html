@@ -4,7 +4,10 @@
       <svg class="goalpost" viewBox="0 0 28 32" aria-hidden="true"><path d="M5 2v11h18V2M14 13v17" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="square"/></svg>
       <span class="wordmark"><span class="wm-top">Hard</span><span class="wm-main">Count</span></span>
     </span>
-    <span class="scorebug-date tape" id="todayDate">—</span>
+    <span class="scorebug-right">
+      <span class="scorebug-date tape" id="todayDate">—</span>
+      <button class="btn-account" id="btnAccount" hidden>Log in</button>
+    </span>
   </div>
 </header>
 
@@ -307,6 +310,7 @@
       <div class="share-box" id="legShareBox">—</div>
       <button class="btn btn-ghost btn-small" id="btnLegCopy">Copy result</button>
       <p class="copy-status" id="legCopyStatus"></p>
+      <div class="sheet lb-box" id="legLbBox" hidden></div>
       <div class="btn-row" style="margin-top:24px;">
         <button class="btn btn-primary" id="btnLegRestart">Build another</button>
         <button class="btn btn-ghost" id="btnBackHub4">‹ Back to the lockers</button>
@@ -315,6 +319,20 @@
   </section>
 
 </main>
+
+<div class="modal-overlay" id="authModal" hidden>
+  <div class="sheet auth-sheet">
+    <button class="modal-close" id="authClose" aria-label="Close">×</button>
+    <p class="tape" id="authTag">Log in</p>
+    <p class="auth-lede" id="authLede">Five-Star and Hot Seat save to an account, so your career finishes post to the leaderboard automatically.</p>
+    <div class="auth-field" id="authNameField" hidden><label for="authName">Name<small>shown on the leaderboard</small></label><input type="text" id="authName" maxlength="24" autocomplete="nickname"></div>
+    <div class="auth-field"><label for="authEmail">Email</label><input type="email" id="authEmail" autocomplete="email"></div>
+    <div class="auth-field"><label for="authPassword">Password</label><input type="password" id="authPassword" autocomplete="current-password"></div>
+    <p class="auth-error" id="authError" hidden></p>
+    <button class="btn btn-primary" id="authSubmit">Log in ▸</button>
+    <p class="auth-switch" id="authSwitchWrap">No account? <button class="link-btn" id="authSwitch">Sign up</button></p>
+  </div>
+</div>
 
 <footer class="site-footer">
   <p>Fan-made college football sim. Draftable legends are real, honoring real careers, and the schools you face are real programs. Every matchup, score, and record is simulated. Independent fan project, not affiliated with the NCAA or any school. All results are simulated for entertainment only.</p>
